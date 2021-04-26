@@ -14,6 +14,32 @@ resourceDatabase.loadDatabase();
 const resourceBaseURL = `https://www.simcompanies.com/api/v3/en/encyclopedia/resources/0/`;
 const imagesAPIURL = `https://d1fxy698ilbz6u.cloudfront.net/static/`;
 
+app.get('/resources',(request, response) => {
+    resourceDatabase.find({}, (err, data)=> {
+        if (err){
+            response.end();
+            return;
+        }
+
+        const dataForClient = [];
+        data.forEach(( item ) => {
+        //    console.log(item);
+            tempJson = {
+                name:item.name,
+                image:item.image,
+                transportation:item.transportation,
+                db_letter:item.db_letter,
+                ingredients:item.producedFrom,
+                producedPerHour:item.producedAnHour,
+                baseSalary:item.baseSalary,
+            };
+            dataForClient.push(tempJson);
+        });
+        dataForClient.push({imagesBaseURL:imagesAPIURL})
+        console.log(dataForClient);
+        response.json(dataForClient);
+    });
+});
 
 
 
@@ -24,7 +50,7 @@ updated if the resources base information changes.
 //currentResource = 1
 //setInterval(function (){
 //    getEncyclopediaData(currentResource)
-//}, 3000);
+//}, 10000);
 
 const getEncyclopediaData = async (resourceNumber) => {
     const encycResponse = await fetch(resourceBaseURL+resourceNumber.toString());
@@ -43,20 +69,25 @@ const getEncyclopediaData = async (resourceNumber) => {
     }
     currentResource += 1
     if (currentResource >= 120){
-        currentResource = 1
+        currentResource = 1;
+        cleanResourceDatabase();
     }
 };
 
 /* Removes encyclopedia database entries that are a result of not being able to
     find the resource. getEncyclopediaData loops through 120 items and there
     is a gap in there where some resource numbers do not have a page.*/
-/*
+
 const cleanResourceDatabase = () => {
     resourceDatabase.loadDatabase();
     resourceDatabase.remove({message:"Could not find such resource"},{multi:true},
         function(err,numRemoved){
                 console.log(`Removed ${numRemoved} erroneous entries.`);
-    })
+    });
+    resourceDatabase.persistence.compactDatafile();
 }
-cleanResourceDatabase();
+
+/*
+Get data from the marketplace-
+add later
 */
