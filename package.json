@@ -1,0 +1,25 @@
+{
+  "name": "sccalculator",
+  "version": "0.0.1",
+  "description": "A calculator for Sim Companies.",
+  "main": "index.js",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "nedb": "^1.8.0",
+    "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Sim",
+    "Companies",
+    "Game",
+    "Calculator",
+    "Resource"
+  ],
+  "author": "Bohring Chemical Supplier",
+  "license": "MIT"
+}
