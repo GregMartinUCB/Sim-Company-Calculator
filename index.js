@@ -9,10 +9,38 @@ app.use(express.static('public'));
 app.use(express.json({limit: '1mb'}));
 
 const resourceDatabase = new DataStore('resourceDatabase.db');
-resourceDatabase.loadDatabase();
 
 const resourceBaseURL = `https://www.simcompanies.com/api/v3/en/encyclopedia/resources/0/`;
 const imagesAPIURL = `https://d1fxy698ilbz6u.cloudfront.net/static/`;
+
+/* Removes encyclopedia database entries that are a result of not being able to
+    find the resource. getEncyclopediaData loops through 120 items and there
+    is a gap in there where some resource numbers do not have a page.*/
+
+const cleanResourceDatabase = () => {
+    resourceDatabase.loadDatabase();
+    resourceDatabase.remove({message:"Could not find such resource"},{multi:true},
+        function(err,numRemoved){
+                console.log(`Removed ${numRemoved} erroneous entries.`);
+    });
+    resourceDatabase.persistence.compactDatafile();
+}
+
+/********************************
+Setup
+*********************************/
+
+function setup(){
+    cleanResourceDatabase();
+    refreshEncycData();
+}
+
+setup();
+
+
+/********************************
+Routes
+*********************************/
 
 app.get('/resources',(request, response) => {
     resourceDatabase.find({}, (err, data)=> {
@@ -41,16 +69,25 @@ app.get('/resources',(request, response) => {
     });
 });
 
-
+/********************************
+Custom functions for handling data
+*********************************/
 
 /*
 This function will update the encyclopedia resource entries. Only needs to be
 updated if the resources base information changes.
 */
-//currentResource = 1
-//setInterval(function (){
-//    getEncyclopediaData(currentResource)
-//}, 10000);
+function refreshEncycData(){
+    currentResource = 1;
+    const encycInterval = setInterval( () => {
+        getEncyclopediaData(currentResource)
+        if (currentResource >= 120){
+            cleanResourceDatabase();
+            clearInterval(encycInterval);
+            return;
+        }
+    }, 2000);
+}
 
 const getEncyclopediaData = async (resourceNumber) => {
     const encycResponse = await fetch(resourceBaseURL+resourceNumber.toString());
@@ -74,18 +111,7 @@ const getEncyclopediaData = async (resourceNumber) => {
     }
 };
 
-/* Removes encyclopedia database entries that are a result of not being able to
-    find the resource. getEncyclopediaData loops through 120 items and there
-    is a gap in there where some resource numbers do not have a page.*/
 
-const cleanResourceDatabase = () => {
-    resourceDatabase.loadDatabase();
-    resourceDatabase.remove({message:"Could not find such resource"},{multi:true},
-        function(err,numRemoved){
-                console.log(`Removed ${numRemoved} erroneous entries.`);
-    });
-    resourceDatabase.persistence.compactDatafile();
-}
 
 /*
 Get data from the marketplace-

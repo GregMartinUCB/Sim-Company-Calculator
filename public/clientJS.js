@@ -15,26 +15,46 @@ async function getResources(){
     console.log(resourceJson);
 }
 
-productID = 0;
-ingredients = [];
-productJson = [];
+
+
+
+
 
 const sel = document.getElementById('productSelect');
 document.getElementById("selectProduct").onclick = function() {
-    console.log(sel.value);
-    productID = sel.value;
+    let productData = {
+        let productID = 0,
+        let ingredients = [],
+        let productJson = [],
+    }
+    //console.log(sel.value);
+    productData.productID = sel.value;
     resourceJson.forEach((item) => {
         if(item.db_letter == productID){
-            productJson = item;
-            ingredients = item.ingredients;
+            productData.productJson = item;
+            productData.ingredients = item.ingredients;
             //console.log(ingredients);
             //console.log(ingredients.length);
         }
     });
+    const ingListDiv = document.getElementById("ingredientList")
+    removeIngredientInputs(ingListDiv)
+    addIngredientDiv(ingListDiv,productData);
+
+}
+
+function removeIngredientInputs(parentDOM){
+    while (parentDOM.firstChild) {
+    parentDOM.removeChild(parentDOM.lastChild);
+  }
+}
+
+function addIngredientDiv(parentDOM, prodData ){
+
     ingredients.forEach((ingredient, i) => {
         let ing = document.createElement("input");
         ing.type = "number";
+        ingListDiv.appendChild(ing);
+        ingListDiv.appendChild(document.createElement("BR"))
     });
-
-
 }
