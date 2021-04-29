@@ -13,21 +13,30 @@
             <button type="button" id="submitName" name="">Submit Name</button>
         </form>
 
-        <form action="index.html" method="post">
-            <select id="productSelect" class="" name="">
 
+        <form action="index.html" method="post">
+            <h3>Product Produced</h3>
+            <select id="productSelect" class="" name="">
             </select>
             <button type="button" id="selectProduct" name="">Select Product</button>
         </form>
+
         <form id="infoFromUser" action="../index.js" method="post">
+            <h3>Sell Price</h3>
+            <input type="text" id="sellPrice" name="" value="">
+            <h3>Contracts or Exchange</h3>
+            <input type="radio" id="contract" name="sellWhereButton" value="Contract">
+            <input type="radio" id="exchange" name="sellWhereButton" value="Exchange">
 
             <h3>Building Level</h3>
             <input type="number" id="buildingLevel" name="buildingLevelField" value=""> <br>
+            <h3>Transport Unit Cost</h3>
+            <input type="number" id="transCost" name="TransportationCost" value=""> <br>
             <h3>Production Speed</h3>
             <input type="number" id="productionSpeed" name="productionSpeedField" value=""> <br>
             <h3>Admin Overhead</h3>
             <input type="number" id="adminOverhead" name="adminOverheadField" value=""> <br>
-            <h3>ingredients</h3>
+            <h3>Ingredients</h3>
             <div id="ingredientList" class="">
             </div>
 
