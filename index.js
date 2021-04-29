@@ -32,7 +32,7 @@ Setup
 
 function setup(){
     cleanResourceDatabase();
-    refreshEncycData();
+    //refreshEncycData();
 }
 
 setup();
@@ -64,14 +64,40 @@ app.get('/resources',(request, response) => {
             dataForClient.push(tempJson);
         });
         dataForClient.push({imagesBaseURL:imagesAPIURL})
-        console.log(dataForClient);
+        //console.log(dataForClient);
         response.json(dataForClient);
     });
+});
+
+/*
+Recieves Post request for company name, then returns relevant company data
+*/
+app.post('/playerData', async (request, response) => {
+    //console.log(request.body);
+    await response.setHeader('Content-Type', 'application/json');
+    const playerJsonToSend = await getPlayerData(request.body.name);
+    await response.json(playerJsonToSend);
+
 });
 
 /********************************
 Custom functions for handling data
 *********************************/
+
+async function getPlayerData(companyName){
+    const correctCompanyName = companyName.split(' ').join('-');
+    const companyURL = `https://www.simcompanies.com/api/v2/players-by-company/${correctCompanyName}/`
+    const playerDataResponse = await fetch(companyURL);
+    const playerDataJson = await playerDataResponse.json();
+    //console.log(playerDataJson);
+
+    let playerDataJsonToSend = {};
+    playerDataJsonToSend.adminOverhead = playerDataJson.player.administrationOverhead;
+    playerDataJsonToSend.productionModifier = playerDataJson.player.productionModifier;
+    //console.log(playerDataJsonToSend);
+
+    return playerDataJsonToSend;
+}
 
 /*
 This function will update the encyclopedia resource entries. Only needs to be

@@ -7,6 +7,12 @@
     <body onload="getResources()">
         <h1>Sim Companies Profit Calculator!</h1>
 
+        <form class="" action="" method="post">
+            <h3>Company Name</h3>
+            <input type="text" id="playerName" name="company" value="">
+            <button type="button" id="submitName" name="">Submit Name</button>
+        </form>
+
         <form action="index.html" method="post">
             <select id="productSelect" class="" name="">
 
@@ -15,13 +21,13 @@
         </form>
         <form id="infoFromUser" action="../index.js" method="post">
 
-            <p>Building Level</p>
-            <input type="number" name="buildingLevelField" value=""> <br>
-            <p>Production Speed</p>
-            <input type="number" name="productionSpeedField" value=""> <br>
-            <p>Admin Overhead</p>
-            <input type="number" name="adminOverheadField" value=""> <br>
-            <p>ingredients</p>
+            <h3>Building Level</h3>
+            <input type="number" id="buildingLevel" name="buildingLevelField" value=""> <br>
+            <h3>Production Speed</h3>
+            <input type="number" id="productionSpeed" name="productionSpeedField" value=""> <br>
+            <h3>Admin Overhead</h3>
+            <input type="number" id="adminOverhead" name="adminOverheadField" value=""> <br>
+            <h3>ingredients</h3>
             <div id="ingredientList" class="">
             </div>
 
