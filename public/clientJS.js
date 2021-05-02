@@ -40,7 +40,7 @@ function removeAllChild(parentDOM){
 }
 
 function addIngredientDiv(parentDOM, prodData ){
-
+    ingData = [];
     prodData.ingredients.forEach((ingredient, i) => {
         let ingDataElement = {};
         console.log(ingredient);
@@ -70,6 +70,7 @@ function addIngredientDiv(parentDOM, prodData ){
 
         parentDOM.appendChild(ingDiv);
         parentDOM.appendChild(document.createElement("BR"));
+
 
         ingData.push(ingDataElement);
     });

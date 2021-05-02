@@ -66,6 +66,7 @@ app.get('/resources',(request, response) => {
         });
         dataForClient.push({imagesBaseURL:imagesAPIURL})
         //console.log(dataForClient);
+
         response.json(dataForClient);
     });
 });
@@ -85,6 +86,10 @@ app.post('/playerData', async (request, response) => {
 /********************************
 Custom functions for handling data
 *********************************/
+
+function alphabetSortResources (resource){
+    
+}
 
 async function getPlayerData(companyName){
     const correctCompanyName = companyName.split(' ').join('-');
