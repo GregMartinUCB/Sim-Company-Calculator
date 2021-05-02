@@ -50,12 +50,12 @@ app.get('/resources',(request, response) => {
             return;
         }
 
-        const dataForClient = [];
+        let dataForClient = [];
         data.forEach(( item ) => {
         //    console.log(item);
             tempJson = {
                 name:item.name,
-                image:item.image,
+                imageURL:imagesAPIURL+item.image,
                 transportation:item.transportation,
                 db_letter:item.db_letter,
                 ingredients:item.producedFrom,
@@ -64,9 +64,7 @@ app.get('/resources',(request, response) => {
             };
             dataForClient.push(tempJson);
         });
-        dataForClient.push({imagesBaseURL:imagesAPIURL})
-        //console.log(dataForClient);
-
+        dataForClient = sortResourcesAlphabetically(dataForClient);
         response.json(dataForClient);
     });
 });
@@ -87,8 +85,17 @@ app.post('/playerData', async (request, response) => {
 Custom functions for handling data
 *********************************/
 
-function alphabetSortResources (resource){
-    
+function sortResourcesAlphabetically (jsonArrayOfResources){
+    jsonArrayOfResources.sort( (a, b) =>{
+        return compareStrings(a.name, b.name)});
+    //console.log(jsonArrayOfResources);
+    return jsonArrayOfResources
+}
+
+function compareStrings (a ,b){
+    a= a.toLowerCase();
+    b= b.toLowerCase();
+    return (a<b) ? -1 : (a>b) ? 1 : 0;
 }
 
 async function getPlayerData(companyName){
