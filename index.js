@@ -3,8 +3,9 @@ const DataStore = require('nedb');
 const fetch = require('node-fetch');
 require('dotenv').config();
 const app = express();
+const port = process.env.PORT || 3000;
 
-app.listen(3000,() => console.log('listening at 3000'));
+app.listen(port, ()=>{console.log('Server Started');});
 app.use(express.static('public'));
 app.use(express.json({limit: '1mb'}));
 
@@ -73,11 +74,12 @@ app.get('/resources',(request, response) => {
 Recieves Post request for company name, then returns relevant company data
 */
 app.post('/playerData', async (request, response) => {
+    //Disabled to avoid spamming server.
     //console.log(request.body);
-    await response.setHeader('Content-Type', 'application/json');
-    const playerJsonToSend = await getPlayerData(request.body.name);
-    await response.json(playerJsonToSend);
-
+    //await response.setHeader('Content-Type', 'application/json');
+    //const playerJsonToSend = await getPlayerData(request.body.name);
+    //await response.json(playerJsonToSend);
+    response.end();
 });
 
 /********************************
