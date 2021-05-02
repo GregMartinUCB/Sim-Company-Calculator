@@ -51,11 +51,14 @@ function addIngredientDiv(parentDOM, prodData ){
         ingInputSourceCost.id = `sourceCost${ingredient.resource.db_letter}`;
         ingInputSourceCost.type = "number";
         ingInputSourceCost.name = "ingCost";
+        ingInputSourceCost.required = true;
         ingDataElement.id = ingredient.resource.db_letter;
+
+        let imageHTML = `<img class="icon" src= "/images/${ingredient.resource.name}.png" />`;
 
         let title = document.createElement('label');
         title.for = `sourceCost${ingredient.resource.db_letter}`;
-        title.innerHTML = `${ingredient.resource.name} x ${ingredient.amount}`;
+        title.innerHTML = `${ingredient.resource.name} x ${ingredient.amount}${imageHTML}`;
         ingDataElement.name = ingredient.resource.name;
         ingDataElement.amount = ingredient.amount;
 
@@ -69,7 +72,7 @@ function addIngredientDiv(parentDOM, prodData ){
         ingDiv.appendChild(ingInputSourceCost);
 
         parentDOM.appendChild(ingDiv);
-        parentDOM.appendChild(document.createElement("BR"));
+        //parentDOM.appendChild(document.createElement("BR"));
 
 
         ingData.push(ingDataElement);
@@ -77,7 +80,7 @@ function addIngredientDiv(parentDOM, prodData ){
     const calculateButton = document.createElement('button');
     calculateButton.id = 'calculateProfitButton';
     calculateButton.textContent = 'Calculate Profit';
-    calculateButton.class = 'button';
+    calculateButton.className = 'button';
     parentDOM.appendChild(calculateButton);
 }
 
@@ -116,6 +119,18 @@ document.getElementById("selectProduct").onclick = function() {
     });
     const ingListDiv = document.getElementById("ingredientList");
 
+    const productSelectForm = document.getElementById('productForm');
+    if (document.getElementById('imageDiv')){
+        document.getElementById('imageDiv').remove();
+    }
+    const imageDiv = document.createElement('div');
+    imageDiv.className = 'icon';
+    imageDiv.id = 'imageDiv';
+    const image = document.createElement('img');
+    image.src = `/images/${productData.productJson.name}.png`;
+
+    imageDiv.appendChild(image)
+    productSelectForm.append(imageDiv);
 
     removeAllChild(ingListDiv);
     addIngredientDiv(ingListDiv,productData);
@@ -123,7 +138,7 @@ document.getElementById("selectProduct").onclick = function() {
 
 }
 
-function setUpCalcButton(button){
+function setUpCalcButton(){
     button = document.getElementById('calculateProfitButton');
     button.onclick = function() {
 
@@ -148,8 +163,10 @@ function setUpCalcButton(button){
 
         let unitsPerHour = productData.producedPerHour * (1+(tempProduction/100));
         let workerCost = tempBaseSalary/unitsPerHour;
-        let laborCost = workerCost * tempAdminCost;
+        let laborCost = workerCost * (1-tempAdminCost/100);
         let profitPerUnit;
+
+        console.log(totalIngCost+laborCost);
 
         if(sellWhere[0].checked){
             profitPerUnit = tempSellPrice - (tempTransportNeeded*tempTransCost/2) -
@@ -159,11 +176,21 @@ function setUpCalcButton(button){
             profitPerUnit = tempSellPrice * 0.97 - (tempTransportNeeded*tempTransCost) -
                 totalIngCost;
         }
+        else{
+            profitPerUnit = tempSellPrice * 0.97 - (tempTransportNeeded*tempTransCost) -
+                totalIngCost;
+        }
 
         let profitPerHour = profitPerUnit * unitsPerHour*tempBuildingLevel;
         let profitPerDay = profitPerHour *24;
 
-        displayProfit(profitPerUnit,profitPerHour,profitPerDay);
+        if (tempSellPrice == 0){
+            let totalUnitCost = totalIngCost+laborCost;
+            displaySourcingCost(totalUnitCost);
+        }else{
+            displayProfit(profitPerUnit,profitPerHour,profitPerDay);
+        }
+
 
     }
 }
@@ -185,4 +212,15 @@ function displayProfit(profUnit,profHour,profDay){
     profitDisplayDiv.appendChild(profitPerUnitText);
     profitDisplayDiv.appendChild(profitPerHourText);
     profitDisplayDiv.appendChild(profitPerDayText);
+}
+
+function displaySourcingCost(costPerUnit){
+    profitDisplayDiv = document.getElementById('profitDisplayDiv');
+    removeAllChild(profitDisplayDiv);
+
+    const sourcingCostUnit = document.createElement('p');
+    sourcingCostUnit.id = 'sourcingCostPerUnit';
+    sourcingCostUnit.textContent = `Unit Sourcing Cost: $${costPerUnit.toFixed(3)}`;
+
+    profitDisplayDiv.appendChild(sourcingCostUnit);
 }

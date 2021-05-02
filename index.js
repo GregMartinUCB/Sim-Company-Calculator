@@ -1,12 +1,15 @@
 const express = require('express');
+const path = require('path');
 const DataStore = require('nedb');
 const fetch = require('node-fetch');
+const fs = require('fs');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
+const dir = path.join(__dirname,'public');
 
 app.listen(port, ()=>{console.log('Server Started');});
-app.use(express.static('public'));
+app.use(express.static(dir));
 app.use(express.json({limit: '1mb'}));
 
 const resourceDatabase = new DataStore('resourceDatabase.db');
@@ -88,7 +91,6 @@ Custom functions for handling data
 function sortResourcesAlphabetically (jsonArrayOfResources){
     jsonArrayOfResources.sort( (a, b) =>{
         return compareStrings(a.name, b.name)});
-    //console.log(jsonArrayOfResources);
     return jsonArrayOfResources
 }
 
@@ -103,12 +105,10 @@ async function getPlayerData(companyName){
     const companyURL = `https://www.simcompanies.com/api/v2/players-by-company/${correctCompanyName}/`
     const playerDataResponse = await fetch(companyURL);
     const playerDataJson = await playerDataResponse.json();
-    //console.log(playerDataJson);
 
     let playerDataJsonToSend = {};
     playerDataJsonToSend.adminOverhead = playerDataJson.player.administrationOverhead;
     playerDataJsonToSend.productionModifier = playerDataJson.player.productionModifier;
-    //console.log(playerDataJsonToSend);
 
     return playerDataJsonToSend;
 }
@@ -132,11 +132,15 @@ function refreshEncycData(){
 const getEncyclopediaData = async (resourceNumber) => {
     const encycResponse = await fetch(resourceBaseURL+resourceNumber.toString());
     const encycJson = await encycResponse.json();
+
+    //downloading image and saving as a file. Gives path to add to database.
+    const resourcePNGPath = await downloadReasourcePNG(encycJson.image,encycJson.name);
     try{
         const resourceName = await encycJson.name;
         console.log(resourceName);
         resourceDatabase.loadDatabase();
-        resourceDatabase.update({name:resourceName},encycJson,{ upsert: true }, (err, num) => {
+        resourceDatabase.update({name:resourceName},
+            encycJson,{ upsert: true }, (err, num) => {
 
         });
         resourceDatabase.persistence.compactDatafile();
@@ -151,6 +155,13 @@ const getEncyclopediaData = async (resourceNumber) => {
     }
 };
 
+const downloadReasourcePNG = async (partialImageURL,name) => {
+    const imageResponse = await fetch(imagesAPIURL+partialImageURL);
+    const buffer = await imageResponse.buffer();
+    fs.writeFile(`./public/images/${name}.png`,buffer, ()=>
+            console.log(`Downloaded ${name}`));
+    return `./public/images/${name}.png`
+}
 
 
 /*
