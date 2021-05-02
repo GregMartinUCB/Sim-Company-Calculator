@@ -33,7 +33,7 @@ async function getPlayerData(playerName){
 
 }
 
-function removeIngredientInputs(parentDOM){
+function removeAllChild(parentDOM){
     while (parentDOM.firstChild) {
     parentDOM.removeChild(parentDOM.lastChild);
   }
@@ -53,7 +53,8 @@ function addIngredientDiv(parentDOM, prodData ){
         ingInputSourceCost.name = "ingCost";
         ingDataElement.id = ingredient.resource.db_letter;
 
-        let title = document.createElement('h4');
+        let title = document.createElement('label');
+        title.for = `sourceCost${ingredient.resource.db_letter}`;
         title.innerHTML = `${ingredient.resource.name} x ${ingredient.amount}`;
         ingDataElement.name = ingredient.resource.name;
         ingDataElement.amount = ingredient.amount;
@@ -72,14 +73,23 @@ function addIngredientDiv(parentDOM, prodData ){
 
         ingData.push(ingDataElement);
     });
+    const calculateButton = document.createElement('button');
+    calculateButton.id = 'calculateProfitButton';
+    calculateButton.textContent = 'Calculate Profit';
+    calculateButton.class = 'button';
+    parentDOM.appendChild(calculateButton);
 }
 
 
 document.getElementById("submitName").onclick = async function() {
-    await getPlayerData(document.getElementById("playerName").value);
-    adminOverheadDisplayed = parseFloat((playerData.adminOverhead - 1) * 100).toFixed(3);
-    document.getElementById("adminOverhead").value = adminOverheadDisplayed;
-    document.getElementById("productionSpeed").value = playerData.productionModifier;
+    /*
+    Currently disabled getting user information to avoid spamming sim companies
+    servers.
+    */
+    //await getPlayerData(document.getElementById("playerName").value);
+    //adminOverheadDisplayed = parseFloat((playerData.adminOverhead - 1) * 100).toFixed(3);
+    //document.getElementById("adminOverhead").value = adminOverheadDisplayed;
+    //document.getElementById("productionSpeed").value = playerData.productionModifier;
 
 }
 
@@ -103,27 +113,26 @@ document.getElementById("selectProduct").onclick = function() {
             //console.log(ingredients.length);
         }
     });
-    const ingListDiv = document.getElementById("ingredientList")
-    removeIngredientInputs(ingListDiv);
+    const ingListDiv = document.getElementById("ingredientList");
+
+
+    removeAllChild(ingListDiv);
     addIngredientDiv(ingListDiv,productData);
-    const calculateButton = document.createElement('button');
-    calculateButton.id = 'calculateProfitButton';
-    calculateButton.textContent = 'Calculate Profit';
-    document.body.append(calculateButton);
-    setUpCalcButton(calculateButton);
+    setUpCalcButton();
 
 }
 
 function setUpCalcButton(button){
+    button = document.getElementById('calculateProfitButton');
     button.onclick = function() {
 
         let sellWhere = document.getElementsByName('sellWhereButton');
-        console.log(sellWhere[1].checked);
+        //console.log(sellWhere[1].checked);
         let tempSellPrice = 0;
         let tempTransCost = document.getElementById('transCost').value;
         let tempBuildingLevel = 1;
-        let tempProduction = playerData.productionModifier;
-        let tempAdminCost = playerData.adminOverhead;
+        let tempProduction = document.getElementById('productionSpeed').value;
+        let tempAdminCost = document.getElementById('adminOverhead').value;
         let tempBaseSalary = productData.baseSalary;
         let tempTransportNeeded = productData.transportNeeded;
         let totalIngCost = 0;
@@ -151,23 +160,28 @@ function setUpCalcButton(button){
         }
 
         let profitPerHour = profitPerUnit * unitsPerHour*tempBuildingLevel;
+        let profitPerDay = profitPerHour *24;
 
-        if(document.getElementById('profitDiv')){
-            console.log('test');
-            document.getElementById('profitDiv').remove;
-        }
-        const profitDisplay = document.createElement('div');
-        profitDisplay.id = 'profitDiv';
-        const profitPerUnitText = document.createElement('p');
-        profitPerUnitText.id = 'profitPerUnitID';
-        profitPerUnitText.textContent = `Profit per unit: ${profitPerUnit.toFixed(3)}`;
-        const profitPerHourText = document.createElement('p');
-        profitPerHourText.id = 'profitPerHourID';
-        profitPerHourText.textContent = `Profit per hour: ${profitPerHour.toFixed(2)}`;
-
-        document.body.append(profitPerUnitText);
-        document.body.append(document.createElement('br'));
-        document.body.append(profitPerHourText);
+        displayProfit(profitPerUnit,profitPerHour,profitPerDay);
 
     }
+}
+
+function displayProfit(profUnit,profHour,profDay){
+    profitDisplayDiv = document.getElementById('profitDisplayDiv');
+    removeAllChild(profitDisplayDiv);
+
+    const profitPerUnitText = document.createElement('p');
+    profitPerUnitText.id = 'profitPerUnitID';
+    profitPerUnitText.textContent = `Profit per unit: $${profUnit.toFixed(3)}`;
+    const profitPerHourText = document.createElement('p');
+    profitPerHourText.id = 'profitPerHourID';
+    profitPerHourText.textContent = `Profit per hour: $${profHour.toFixed(2)}`;
+    const profitPerDayText = document.createElement('p');
+    profitPerDayText.id = 'profitPerDayID';
+    profitPerDayText.textContent = `Profit per day: $${profDay.toFixed(2)}`;
+
+    profitDisplayDiv.appendChild(profitPerUnitText);
+    profitDisplayDiv.appendChild(profitPerHourText);
+    profitDisplayDiv.appendChild(profitPerDayText);
 }
