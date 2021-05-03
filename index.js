@@ -6,11 +6,16 @@ const fs = require('fs');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
-const dir = path.join(__dirname,'public');
+const dir = path.join(__dirname, 'public');
 
-app.listen(port, ()=>{console.log('Server Started');});
+app.listen(port, () => {
+    console.log('Server Started');
+});
 app.use(express.static(dir));
-app.use(express.json({limit: '1mb'}));
+app.use(express.json({
+    limit: '1mb'
+}));
+app.set('view engine', 'ejs');
 
 const resourceDatabase = new DataStore('resourceDatabase.db');
 
@@ -23,10 +28,14 @@ const imagesAPIURL = `https://d1fxy698ilbz6u.cloudfront.net/static/`;
 
 const cleanResourceDatabase = () => {
     resourceDatabase.loadDatabase();
-    resourceDatabase.remove({message:"Could not find such resource"},{multi:true},
-        function(err,numRemoved){
-                console.log(`Removed ${numRemoved} erroneous entries.`);
-    });
+    resourceDatabase.remove({
+            message: "Could not find such resource"
+        }, {
+            multi: true
+        },
+        function(err, numRemoved) {
+            console.log(`Removed ${numRemoved} erroneous entries.`);
+        });
     resourceDatabase.persistence.compactDatafile();
 }
 
@@ -34,7 +43,7 @@ const cleanResourceDatabase = () => {
 Setup
 *********************************/
 
-function setup(){
+function setup() {
     cleanResourceDatabase();
     //refreshEncycData();
 }
@@ -46,24 +55,28 @@ setup();
 Routes
 *********************************/
 
-app.get('/resources',(request, response) => {
-    resourceDatabase.find({}, (err, data)=> {
-        if (err){
+app.get("/", (req, res) => {
+    res.render('calc');
+});
+
+app.get('/resources', (request, response) => {
+    resourceDatabase.find({}, (err, data) => {
+        if (err) {
             response.end();
             return;
         }
 
         let dataForClient = [];
-        data.forEach(( item ) => {
-        //    console.log(item);
+        data.forEach((item) => {
+            //    console.log(item);
             tempJson = {
-                name:item.name,
-                imageURL:imagesAPIURL+item.image,
-                transportation:item.transportation,
-                db_letter:item.db_letter,
-                ingredients:item.producedFrom,
-                producedPerHour:item.producedAnHour,
-                baseSalary:item.baseSalary,
+                name: item.name,
+                imageURL: imagesAPIURL + item.image,
+                transportation: item.transportation,
+                db_letter: item.db_letter,
+                ingredients: item.producedFrom,
+                producedPerHour: item.producedAnHour,
+                baseSalary: item.baseSalary,
             };
             dataForClient.push(tempJson);
         });
@@ -84,23 +97,32 @@ app.post('/playerData', async (request, response) => {
     response.end();
 });
 
+app.get('/VIPlanner', (req, res) =>{
+    res.render('VIPlanner');
+})
+
+app.use(function(req, res, next) {
+    res.status(404).render('404');
+});
+
 /********************************
 Custom functions for handling data
 *********************************/
 
-function sortResourcesAlphabetically (jsonArrayOfResources){
-    jsonArrayOfResources.sort( (a, b) =>{
-        return compareStrings(a.name, b.name)});
+function sortResourcesAlphabetically(jsonArrayOfResources) {
+    jsonArrayOfResources.sort((a, b) => {
+        return compareStrings(a.name, b.name)
+    });
     return jsonArrayOfResources
 }
 
-function compareStrings (a ,b){
-    a= a.toLowerCase();
-    b= b.toLowerCase();
-    return (a<b) ? -1 : (a>b) ? 1 : 0;
+function compareStrings(a, b) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+    return (a < b) ? -1 : (a > b) ? 1 : 0;
 }
 
-async function getPlayerData(companyName){
+async function getPlayerData(companyName) {
     const correctCompanyName = companyName.split(' ').join('-');
     const companyURL = `https://www.simcompanies.com/api/v2/players-by-company/${correctCompanyName}/`
     const playerDataResponse = await fetch(companyURL);
@@ -117,11 +139,11 @@ async function getPlayerData(companyName){
 This function will update the encyclopedia resource entries. Only needs to be
 updated if the resources base information changes.
 */
-function refreshEncycData(){
+function refreshEncycData() {
     currentResource = 1;
-    const encycInterval = setInterval( () => {
+    const encycInterval = setInterval(() => {
         getEncyclopediaData(currentResource)
-        if (currentResource >= 120){
+        if (currentResource >= 120) {
             cleanResourceDatabase();
             clearInterval(encycInterval);
             return;
@@ -130,36 +152,39 @@ function refreshEncycData(){
 }
 
 const getEncyclopediaData = async (resourceNumber) => {
-    const encycResponse = await fetch(resourceBaseURL+resourceNumber.toString());
+    const encycResponse = await fetch(resourceBaseURL + resourceNumber.toString());
     const encycJson = await encycResponse.json();
 
     //downloading image and saving as a file. Gives path to add to database.
-    const resourcePNGPath = await downloadReasourcePNG(encycJson.image,encycJson.name);
-    try{
+    const resourcePNGPath = await downloadReasourcePNG(encycJson.image, encycJson.name);
+    try {
         const resourceName = await encycJson.name;
         console.log(resourceName);
         resourceDatabase.loadDatabase();
-        resourceDatabase.update({name:resourceName},
-            encycJson,{ upsert: true }, (err, num) => {
+        resourceDatabase.update({
+                name: resourceName
+            },
+            encycJson, {
+                upsert: true
+            }, (err, num) => {
 
-        });
+            });
         resourceDatabase.persistence.compactDatafile();
-    }
-    catch(err){
+    } catch (err) {
         console.log(err);
     }
     currentResource += 1
-    if (currentResource >= 120){
+    if (currentResource >= 120) {
         currentResource = 1;
         cleanResourceDatabase();
     }
 };
 
-const downloadReasourcePNG = async (partialImageURL,name) => {
-    const imageResponse = await fetch(imagesAPIURL+partialImageURL);
+const downloadReasourcePNG = async (partialImageURL, name) => {
+    const imageResponse = await fetch(imagesAPIURL + partialImageURL);
     const buffer = await imageResponse.buffer();
-    fs.writeFile(`./public/images/${name}.png`,buffer, ()=>
-            console.log(`Downloaded ${name}`));
+    fs.writeFile(`./public/images/${name}.png`, buffer, () =>
+        console.log(`Downloaded ${name}`));
     return `./public/images/${name}.png`
 }
 

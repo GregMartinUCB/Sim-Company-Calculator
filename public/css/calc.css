@@ -1,0 +1,152 @@
+* {
+    box-sizing: border-box;
+}
+
+html {
+    font-family: "proxima-nova", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    background-image: linear-gradient(#3200ff, #00ff7e);
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: 16px;
+    transition: all 0.3s ease-in;
+
+    @media (max-width: 512px) {
+        padding: 32px;
+        transition: all 0.3s ease-in;
+    }
+
+    @media (max-width: 360px) {
+        padding: 16px;
+        transition: all 0.3s ease-in;
+    }
+}
+
+h1 {
+    text-align: center;
+    color: #000;
+    margin: 0 0 16px 0;
+}
+
+p {
+    text-align: left;
+    margin-top: 0;
+    margin-bottom: 3px;
+}
+
+.calcContainer {
+    position: absolute;
+    top: 0;
+    max-width: 500px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 64px;
+    box-shadow: 2px 2px 96px #111;
+    border-radius: 8px;
+    transition: all 0.3s ease-in;
+
+    @media (max-width: 512px) {
+        padding: 32px;
+        transition: all 0.3s ease-in;
+    }
+
+    @media (max-width: 360px) {
+        padding: 16px;
+        transition: all 0.3s ease-in;
+    }
+}
+
+.row {
+    display: flex;
+}
+
+.column {
+    flex: 50%;
+    text-align: center;
+}
+
+label {
+    display: inline-block;
+    width: 100%;
+    min-width: 128px;
+    margin-bottom: 8px;
+    margin-top: 12px;
+    font-weight: bold;
+}
+
+input, select {
+    display: inline-block;
+    background-color: #fff;
+    color: #888;
+    border: 2px solid #888;
+    border-radius: 2px;
+    height: 25px;
+    width: 100%;
+    font-size: 15px;
+    padding: 0 16px;
+
+    &:focus {
+        background-color: #fff;
+        color: #3200ff;
+        border-color: #3200ff;
+        outline: 0;
+    }
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.profit {
+    color: #000;
+    font-size: 36px;
+    text-align: center;
+    font-weight: bold;
+    transition: all 0.3s ease-in;
+
+    @media (max-width: 512px) {
+        font-size: 40px;
+        transition: all 0.3s ease-in;
+    }
+
+    @media (max-width: 400px) {
+        font-size: 32px;
+        transition: all 0.3s ease-in;
+    }
+}
+
+@media (max-height: 750px) {
+    body {
+        height: 100%;
+    }
+}
+
+.button {
+    text-align: center;
+    background: #66a3ff;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 6px 20px;
+    display: inline-block;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.icon img {
+    max-width: 100px;
+    height: auto;
+}
+
+.icon {
+    max-width: 50px;
+    height: auto;
+}
