@@ -16,7 +16,7 @@ async function getResources(){
         resourceSelection.appendChild(opt);
     });
 
-    console.log(resourceJson);
+    //console.log(resourceJson);
 }
 
 async function getPlayerData(playerName){
