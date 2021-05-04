@@ -16,24 +16,74 @@ async function getResources(){
     console.log(resourceJson);
 }
 
-function findProductGetData(selection){
+//Currently working on this one.
+function getProductData(selection,buildingsLevel){
     productData = {
+        name:'',
         productID : 0,
         ingredients : [],
-        productJson : [],
+        baseSalary : 0,
+        producedPerHour: 0
     };
     productData.productID = selection.value;
-    resourceJson.forEach((item) => {
+
+    resourceJson.forEach((item, i) => {
         if(item.db_letter == productData.productID){
-            productData.productJson = item;
-            productData.ingredients = item.ingredients;
-            productData.baseSalary = item.baseSalary;
-            productData.producedPerHour = item.producedPerHour;
-            console.log(item);
+            productData.name = item.name;
+            productIngLevels = getBuildingLevel(item, buildingsLevel);
+
         }
     });
-    return productData;
+
+    productIngLevels.forEach((resource, i) => {
+        if(i !=0){
+            resourceJson.forEach((item, i) => {
+                if(item.name == resource.resource){
+                    if(item.ingredients.length != 0){
+
+                        subIngLevel = getBuildingLevel(item, resource.level);
+                    }
+                }
+            });
+
+        }
+    });
+
+
+    return productData
+
 }
+
+function getBuildingLevel(entry, desiredBuildLevel = 1){
+    buildings = [];
+    productBuilding = {
+        resource: entry.name,
+        level: desiredBuildLevel
+    }
+
+
+    buildings.push(productBuilding);
+    console.log(buildings);
+
+    productPerHour = desiredBuildLevel * entry.producedPerHour;
+
+    entry.ingredients.forEach((item, i) => {
+        building = {
+            resource: '',
+            level: 0
+        }
+        building.resource = item.resource.name;
+        amountIng = item.amount;
+        resourceJson.forEach((resource, i) => {
+            if(item.resource.db_letter == resource.db_letter){
+                building.level = productPerHour * amountIng / resource.producedPerHour;
+            }
+        });
+        buildings.push(building);
+    });
+    return buildings
+}
+
 
 document.getElementById("determineBuildings").onclick = function() {
 
@@ -42,7 +92,7 @@ document.getElementById("determineBuildings").onclick = function() {
 
     if(buildLevel<1){buildLevel = 1;}
 
-    let productInfo = findProductGetData(sel);
+    let productInfo = getProductData(sel, buildLevel);
 
     const productSelectForm = document.getElementById('productForm');
     if (document.getElementById('imageDiv')){
@@ -52,7 +102,7 @@ document.getElementById("determineBuildings").onclick = function() {
     imageDiv.className = 'icon';
     imageDiv.id = 'imageDiv';
     const image = document.createElement('img');
-    image.src = `/images/${productInfo.productJson.name}.png`;
+    image.src = `/images/${productInfo.name}.png`;
 
     imageDiv.appendChild(image)
     productSelectForm.append(imageDiv);
