@@ -7,6 +7,7 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 const dir = path.join(__dirname, 'public');
+const date = new Date();
 
 app.listen(port, () => {
     console.log('Server Started');
@@ -18,9 +19,13 @@ app.use(express.json({
 app.set('view engine', 'ejs');
 
 const resourceDatabase = new DataStore('resourceDatabase.db');
-
 const resourceBaseURL = `https://www.simcompanies.com/api/v3/en/encyclopedia/resources/0/`;
 const imagesAPIURL = `https://d1fxy698ilbz6u.cloudfront.net/static/`;
+
+const marketData = new DataStore('marketDatabase.db');
+marketData.ensureIndex({fieldName: "id",unique:true});
+//const resourceBaseURL = `https://www.simcompanies.com/api/v3/en/encyclopedia/resources/0/`;
+//const imagesAPIURL = `https://d1fxy698ilbz6u.cloudfront.net/static/`;
 
 /* Removes encyclopedia database entries that are a result of not being able to
     find the resource. getEncyclopediaData loops through 120 items and there
@@ -46,6 +51,7 @@ Setup
 function setup() {
     cleanResourceDatabase();
     //refreshEncycData();
+    //updateAllResourceMarketData();
 }
 
 setup();
@@ -195,6 +201,35 @@ const downloadReasourcePNG = async (partialImageURL, name) => {
     fs.writeFile(`./public/images/${name}.png`, buffer, () =>
         console.log(`Downloaded ${name}`));
     return `./public/images/${name}.png`
+}
+
+async function updateMarketData(resource){
+    //tickerAPIURL = `https://www.simcompanies.com/api/v1/market-ticker/${date.toISOString()}`
+    //console.log(tickerAPIURL);
+    exchangeResourceAPIURLBase = 'https://www.simcompanies.com/api/v2/market/'
+    const testExchangeResponse = await fetch(exchangeResourceAPIURLBase + resource);
+    const testExchangeJson = await testExchangeResponse.json();
+    console.log(testExchangeJson);
+    if(testExchangeJson == null){
+        return
+    }else {
+        marketData.loadDatabase();
+        marketData.insert(testExchangeJson);
+        marketData.persistence.compactDatafile();
+    }
+
+}
+
+function updateAllResourceMarketData(){
+    marketIntervalCounter = 1;
+    const marketDataInterval = setInterval(() => {
+        updateMarketData(1);
+        marketIntervalCounter += 1;
+        if(marketIntervalCounter > 115){
+            marketIntervalCounter = 1;
+        }
+
+    },20000)
 }
 
 
