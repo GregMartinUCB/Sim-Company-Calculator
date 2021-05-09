@@ -68,7 +68,7 @@ app.get('/resources', (request, response) => {
 
         let dataForClient = [];
         data.forEach((item) => {
-            //    console.log(item);
+            //console.log(item);
             tempJson = {
                 name: item.name,
                 imageURL: imagesAPIURL + item.image,
@@ -77,9 +77,18 @@ app.get('/resources', (request, response) => {
                 ingredients: item.producedFrom,
                 producedPerHour: item.producedAnHour,
                 baseSalary: item.baseSalary,
+                producedAt: {
+                    buildingLetter: item.producedAt.db_letter,
+                    buildingImg: imagesAPIURL + item.producedAt.image,
+                    buildingName: item.producedAt.name,
+                    buildingCost: item.producedAt.cost
+                }
             };
             dataForClient.push(tempJson);
+            //console.log(tempJson);
+            //console.log(tempJson.ingredients);
         });
+
         dataForClient = sortResourcesAlphabetically(dataForClient);
         response.json(dataForClient);
     });

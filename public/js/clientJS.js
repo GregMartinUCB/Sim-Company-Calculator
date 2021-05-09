@@ -54,7 +54,7 @@ function addIngredientDiv(parentDOM, prodData ){
         ingInputSourceCost.required = true;
         ingDataElement.id = ingredient.resource.db_letter;
 
-        let imageHTML = `<img class="icon" src= "/images/${ingredient.resource.name}.png" />`;
+        let imageHTML = `<img class="iconInline" src= "/images/${ingredient.resource.name}.png" />`;
 
         let title = document.createElement('label');
         title.for = `sourceCost${ingredient.resource.db_letter}`;
@@ -124,7 +124,7 @@ document.getElementById("selectProduct").onclick = function() {
         document.getElementById('imageDiv').remove();
     }
     const imageDiv = document.createElement('div');
-    imageDiv.className = 'icon';
+    imageDiv.className = 'iconInline';
     imageDiv.id = 'imageDiv';
     const image = document.createElement('img');
     image.src = `/images/${productData.productJson.name}.png`;

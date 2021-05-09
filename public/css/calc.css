@@ -129,9 +129,24 @@ input[type=number]::-webkit-outer-spin-button {
 .icon img {
     max-width: 100px;
     height: auto;
+
 }
 
 .icon {
-    max-width: 50px;
+    display: inline-block
+}
+
+.iconInline {
+    max-width: 100px;
     height: auto;
+}
+.iconInline img {
+    max-width: 100px;
+    height: auto;
+
+}
+
+.buildingResult{
+    float:right;
+    display: inline-block
 }
