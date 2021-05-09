@@ -1,5 +1,6 @@
 
 var resourceJson =[];
+const abundanceBuildings = ['M','Q','O'];
 
 async function getResources(){
     const resourceResponse = await fetch('/resources');
@@ -13,7 +14,7 @@ async function getResources(){
         resourceSelection.appendChild(opt);
     });
 
-    console.log(resourceJson);
+    //console.log(resourceJson);
 }
 
 //Currently working on this one.
@@ -22,7 +23,7 @@ function getProductData(selection,buildingsLevel,abundance){
 
     resourceJson.forEach((item, i) => {
         if(item.db_letter == selection.value){
-            ingLayers[0] = getBuildingLevel(item, buildingsLevel);
+            ingLayers[0] = getBuildingLevel(item, buildingsLevel, abundance);
 
         }
     });
@@ -33,25 +34,19 @@ function getProductData(selection,buildingsLevel,abundance){
                 if(i !=0){
                     resourceJson.forEach((item, i) => {
                         if(item.name == resource.resource){
-                            ingLayers[layer+1] = getBuildingLevel(item, resource.level);
+                            ingLayers[layer+1] = getBuildingLevel(item, resource.level,abundance);
                         }
                     });
                 }
             });
         }
     }
-    console.log(ingLayers);
+    //console.log(ingLayers);
     uniqueReasources = reduceIngList(ingLayers);
 
-    const abundanceBuildings = ['M','Q','O'];
-    uniqueReasources.forEach((item, i) => {
-        if(abundanceBuildings.find(building =>
-                                    building === item.producedAt.buildingLetter)){
-            item.level = item.level / (abundance/100);
-        }
-    });
 
-    console.log(uniqueReasources);
+
+    //console.log(uniqueReasources);
     return uniqueReasources
 
 }
@@ -83,7 +78,7 @@ function reduceIngList(ingredientLayers){
     return condensedList;
 }
 
-function getBuildingLevel(entry, desiredBuildLevel){
+function getBuildingLevel(entry, desiredBuildLevel, abundance){
     buildings = [];
     productBuilding = {
         resource: entry.name,
@@ -115,8 +110,15 @@ function getBuildingLevel(entry, desiredBuildLevel){
                 building.producedPerHour = resource.producedPerHour;
                 building.producedAt = resource.producedAt;
                 building.imageURL = resource.imageURL;
+                abunBuild = abundanceBuildings.find(build =>
+                    build == resource.producedAt.buildingLetter);
+                if(abunBuild){
+                    building.level = building.level /(abundance/100);
+                }
             }
+
         });
+
         buildings.push(building);
     });
 
