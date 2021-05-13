@@ -1,0 +1,28 @@
+<script>
+    window.onload = () => {
+        getResources();
+    }
+</script>
+
+<div class="calcTopContainer" style="">
+    <h1>Vertical or Horizontal</h1>
+    <form action="index.html" method="post" id='productForm'>
+        <label for="productSelect">Product Produced</label>
+        <select id="productSelect" class="" name="">
+        </select>
+        <label for="sellPrice">Sell Price (assumed contract)</label>
+        <input type="number" value="" required>
+        <button type="button" class="button" id="selectProduct" name="">Select Product</button>
+    </form>
+</div>
+
+<div class="calcLeftContainer" id = "leftContainer" hidden>
+
+</div>
+
+<div class="calcRightContainer" id = "rightContainer" hidden>
+
+</div>
+
+
+<script scr="../js/VIHIscript.js"></script>

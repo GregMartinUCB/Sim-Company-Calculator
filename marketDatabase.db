@@ -199,3 +199,25 @@
 {"id":13873098,"kind":1,"quantity":3484118,"quality":0,"price":0.238,"seller":{"id":658582,"company":"Miffed Inc","logo":"","certificates":0,"contest_wins":0,"npc":false,"courseId":null,"ip":"341fde"},"posted":"2021-05-07T06:29:29.795263+00:00","fees":0,"_id":"zW0Mrih1qX9SoxEE"}
 {"id":13888221,"kind":1,"quantity":100000,"quality":0,"price":0.238,"seller":{"id":1040197,"company":"Sysbelle","logo":"","certificates":0,"contest_wins":0,"npc":false,"courseId":null,"ip":"ee2cc3"},"posted":"2021-05-07T15:36:12.937715+00:00","fees":714,"_id":"zZWBfCZbufWuzcWb"}
 {"$$indexCreated":{"fieldName":"id","unique":true,"sparse":false}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}
+{"$$indexCreated":{"fieldName":"id","unique":true}}

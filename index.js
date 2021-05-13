@@ -18,12 +18,20 @@ app.use(express.json({
 }));
 app.set('view engine', 'ejs');
 
-const resourceDatabase = new DataStore('resourceDatabase.db');
+//URLs
 const resourceBaseURL = `https://www.simcompanies.com/api/v3/en/encyclopedia/resources/0/`;
 const imagesAPIURL = `https://d1fxy698ilbz6u.cloudfront.net/static/`;
+const buildingsAPIURL = `https://www.simcompanies.com/api/v2/encyclopedia/buildings/`;
 
+//Database inits
+const resourceDatabase = new DataStore('resourceDatabase.db');
 const marketData = new DataStore('marketDatabase.db');
 marketData.ensureIndex({fieldName: "id",unique:true});
+marketData.persistence.compactDatafile();
+const buildingData = new DataStore('buildingData.db');
+
+buildingData.persistence.compactDatafile();
+
 //const resourceBaseURL = `https://www.simcompanies.com/api/v3/en/encyclopedia/resources/0/`;
 //const imagesAPIURL = `https://d1fxy698ilbz6u.cloudfront.net/static/`;
 
@@ -52,6 +60,7 @@ function setup() {
     cleanResourceDatabase();
     //refreshEncycData();
     //updateAllResourceMarketData();
+    //getAllBuildings()
 }
 
 setup();
@@ -64,6 +73,16 @@ Routes
 app.get("/", (req, res) => {
     res.render('calc');
 });
+
+app.get('/buildings', (req, res) =>{
+    buildingData.find({}, (err, data) =>{
+        if (err){
+            response.end();
+            return;
+        }
+        res.json(data);
+    })
+})
 
 app.get('/resources', (request, response) => {
     resourceDatabase.find({}, (err, data) => {
@@ -114,6 +133,10 @@ app.post('/playerData', async (request, response) => {
 
 app.get('/VIPlanner', (req, res) =>{
     res.render('VIPlanner');
+})
+
+app.get('/VIHI', (req, res) =>{
+    res.render('VIHI');
 })
 
 app.use(function(req, res, next) {
@@ -232,6 +255,40 @@ function updateAllResourceMarketData(){
     },20000)
 }
 
+const getBuildingData = async (buildingLetter) => {
+    const buildingResponse = await fetch(buildingsAPIURL + buildingLetter);
+    const buildingJSON = await buildingResponse.json();
+
+    if(buildingJSON.message){ return }
+    //console.log(buildingLetter);
+    //console.log(buildingJSON);
+    return buildingJSON
+
+}
+
+function getAllBuildings(){
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    letterCount = 0;
+    const buildingInterval = setInterval(()=>{
+        try{
+            getBuildingData(letters[letterCount])
+            .then((building)=>{
+                if (building){
+                    buildingData.loadDatabase();
+                    buildingData.insert(building);
+                    buildingData.persistence.compactDatafile();
+                }
+                console.log(building);
+                letterCount += 1;
+            })
+        }
+        catch(err){
+            console.log(err);
+            return
+        }
+    }, 10000)
+
+}
 
 /*
 Get data from the marketplace-
