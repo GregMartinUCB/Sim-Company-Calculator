@@ -204,6 +204,7 @@ input[type=number]::-webkit-outer-spin-button {
     position: relative;
     justify: left;
     display: inline-block;
+    vertical-align:top;
     top: 20px;
 
     width: 30%;
@@ -228,6 +229,7 @@ input[type=number]::-webkit-outer-spin-button {
 .calcCenterContainer {
     position: relative;
     justify: left;
+    vertical-align:top;
     top: 20px;
     display: inline-block;
     width: 30%;

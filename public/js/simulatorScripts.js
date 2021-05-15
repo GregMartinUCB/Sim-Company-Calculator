@@ -2,6 +2,7 @@ var resourceJson =[];
 var buildingsJson =[];
 var buildingSlots =0;
 var map = [];
+var productionSpeed = 0;
 const abundanceBuildings = ['M','Q','O'];
 
 
@@ -40,6 +41,8 @@ document.getElementById('createMap').onclick = function() {
     rightPanel.hidden = false;
     centerPanel.hidden = false;
 
+    productionSpeed = document.getElementById('productionSpeed').value;
+    if(productionSpeed<0){productionSpeed = 0;}
     addBuildingSlots();
 
 }
@@ -106,6 +109,8 @@ function updateBuilding(slotNumber){
      if(document.getElementById(`building${slotNumber}product`)){
          document.getElementById(`building${slotNumber}product`).remove();
          document.getElementById(`building${slotNumber}productLabel`).remove();
+         document.getElementById(`building${slotNumber}Level`).remove();
+         document.getElementById(`building${slotNumber}LevelLabel`).remove();
          try{
              document.getElementById(`building${slotNumber}abundance`).remove();
              document.getElementById(`building${slotNumber}abundanceLabel`).remove();
@@ -179,18 +184,32 @@ function submitBuildings(){
         productJSON = resourceJson.find(
                         resource => resource.db_letter == productDoms[i].value);
         if(abundanceBuildings.find(abunBuild => abunBuild == buildingJSON.db_letter)){
-            abundance = abundanceDoms.shift().value;
+            if(abundanceDoms.length>1){
+                abundance = abundanceDoms.shift().value;
+            }
+            else{
+                abundance = abundanceDoms.value;
+                abundanceDoms = null;
+            }
+
         }else{
             abundance = undefined;
         }
-        level = levelDoms[i].value;
+        if (levelDoms[i].value < 1) {
+            level = 1
+        }
+        else{
+            level = Number(levelDoms[i].value);
+        }
         build = createBuildSlotObject(buildingJSON,abundance,productJSON,level);
         map.push(build);
     });
-    console.log(map);
+    //console.log(map);
+    createCenterPanel();
 }
 
 function createBuildSlotObject(buildJSON,abundance,product,level){
+
     building = {};
     building.level = level;
     building.producing = product;
@@ -199,6 +218,89 @@ function createBuildSlotObject(buildJSON,abundance,product,level){
     building.buildTime = buildJSON.hours;
     if(abundance){
         building.abundance = abundance;
+        building.producedPerHour = product.producedPerHour *
+                                        (1+(productionSpeed/100))*
+                                        (Number(abundace)/100)*
+                                        level;
+    }else{
+        building.producedPerHour = product.producedPerHour *
+                                        (1+(productionSpeed/100))*
+                                        level;
     }
+
     return building;
+}
+
+function createCenterPanel(){
+    panel = document.getElementById("centerContainer");
+    delChildren(panel);
+    adminLabel = document.createElement('label');
+    adminLabel.id = 'adminLabel';
+    adminLabel.for = 'adminInput';
+    adminLabel.textContent = 'Admin Overhead:';
+    adminInput = document.createElement('input');
+    adminInput.id = 'adminInput';
+    adminInput.type = 'number';
+    adminValue = calculateAdminValue();
+    adminInput.value = (adminValue*100).toFixed(3);
+
+    panel.appendChild(adminLabel);
+    panel.appendChild(adminInput);
+
+    panel.appendChild(document.createElement('hr'));
+    titleProducedSection = document.createElement('h2');
+    titleProducedSection.textContent = "Total Produced:";
+    panel.appendChild(titleProducedSection);
+    uniqueProduced = reduceProducedList();
+
+    uniqueProduced.forEach((uniqProduct, i) => {
+        //Left off Here!
+    });
+
+
+}
+
+function calculateAdminValue(){
+    levels = [];
+    map.forEach((product, i) => {
+        levels.push(product.level);
+    });
+    totalLevels = levels.reduce((a,b)=>a+b,0);
+    admin = (totalLevels-1)/170;
+    return admin
+}
+
+function reduceProducedList(){
+    reducedProduced = [];
+    recorded = false;
+    //looping through all produced items trying to find duplicates
+    map.forEach((produced, i) => {
+        duplicateProduced = [];
+        duplicateProduced = map.filter(entry =>
+            entry.producing.db_letter == produced.producing.db_letter);
+        //Checks for the entry in the unique list.
+        if(reducedProduced.find(produce =>
+            produce.producing.db_letter == produced.producing.db_letter)){
+            recorded = true;
+        }
+        //If duplicate found and not recorded
+        console.log(produced);
+        if(duplicateProduced.length>1 && !recorded){
+            totalProduced = 0;
+            //adding up the total produced per hour
+            duplicateProduced.forEach((prod, i) => {
+                totalProduced += prod.producedPerHour;
+            });
+            producedToPushDuplicate = JSON.parse(JSON.stringify(produced));
+            producedToPushDuplicate.producedPerHour = totalProduced;
+            reducedProduced.push(producedToPushDuplicate);
+            recorded = true;
+        }if(!recorded){
+            reducedProduced.push(produced);
+            recorded = true;
+        }
+        recorded=false;
+    });
+    console.log(reducedProduced);
+    return reducedProduced
 }
