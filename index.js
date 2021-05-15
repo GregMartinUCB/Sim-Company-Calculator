@@ -29,7 +29,6 @@ const marketData = new DataStore('marketDatabase.db');
 marketData.ensureIndex({fieldName: "id",unique:true});
 marketData.persistence.compactDatafile();
 const buildingData = new DataStore('buildingData.db');
-
 buildingData.persistence.compactDatafile();
 
 //const resourceBaseURL = `https://www.simcompanies.com/api/v3/en/encyclopedia/resources/0/`;
@@ -57,10 +56,11 @@ Setup
 *********************************/
 
 function setup() {
-    cleanResourceDatabase();
+
     //refreshEncycData();
     //updateAllResourceMarketData();
     //getAllBuildings()
+    cleanResourceDatabase();
 }
 
 setup();
@@ -75,11 +75,13 @@ app.get("/", (req, res) => {
 });
 
 app.get('/buildings', (req, res) =>{
+    buildingData.loadDatabase();
     buildingData.find({}, (err, data) =>{
         if (err){
             response.end();
             return;
         }
+        data = sortResourcesAlphabetically(data);
         res.json(data);
     })
 })
@@ -137,6 +139,10 @@ app.get('/VIPlanner', (req, res) =>{
 
 app.get('/VIHI', (req, res) =>{
     res.render('VIHI');
+})
+
+app.get('/simulator', (req,res) =>{
+    res.render('simulator');
 })
 
 app.use(function(req, res, next) {
@@ -258,10 +264,10 @@ function updateAllResourceMarketData(){
 const getBuildingData = async (buildingLetter) => {
     const buildingResponse = await fetch(buildingsAPIURL + buildingLetter);
     const buildingJSON = await buildingResponse.json();
-
     if(buildingJSON.message){ return }
-    //console.log(buildingLetter);
-    //console.log(buildingJSON);
+    noSpaceName = buildingJSON.name.replace(/\s/g, '');
+    const buildingImgPath = await getBuildingImg(buildingJSON.image,noSpaceName);
+    buildingJSON.imgPath = buildingImgPath;
     return buildingJSON
 
 }
@@ -288,6 +294,14 @@ function getAllBuildings(){
         }
     }, 10000)
 
+}
+
+const getBuildingImg = async (partialImageURL, name) => {
+    const buildingResponse = await fetch(imagesAPIURL + partialImageURL);
+    const buffer = await buildingResponse.buffer();
+    fs.writeFile(`./public/images/${name}.png`, buffer, () =>
+        console.log(`Downloaded ${name}`));
+    return `./public/images/${name}.png`
 }
 
 /*

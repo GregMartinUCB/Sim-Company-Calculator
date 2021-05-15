@@ -61,7 +61,7 @@ label {
     width: 100%;
     min-width: 128px;
     margin-bottom: 8px;
-    margin-top: 12px;
+    margin-top: 3px;
     font-weight: bold;
 }
 
@@ -178,14 +178,14 @@ input[type=number]::-webkit-outer-spin-button {
 .calcLeftContainer {
     position: relative;
     justify: left;
-    float:left;
+    display: inline-block;
     top: 20px;
 
-    width: 45%;
+    width: 30%;
     min-width: 250px;
-    left: 30px;
+
     background-color: #fff;
-    padding: 64px;
+    padding: 20px;
     box-shadow: 2px 2px 96px #111;
     border-radius: 8px;
     transition: all 0.3s ease-in;
@@ -203,14 +203,38 @@ input[type=number]::-webkit-outer-spin-button {
 .calcRightContainer {
     position: relative;
     justify: left;
-    float:right;
+    display: inline-block;
     top: 20px;
 
-    width: 45%;
+    width: 30%;
     min-width: 250px;
-    right: 30px;
+
     background-color: #fff;
-    padding: 64px;
+    padding: 20px;
+    box-shadow: 2px 2px 96px #111;
+    border-radius: 8px;
+    transition: all 0.3s ease-in;
+
+    @media (max-width: 512px) {
+        padding: 32px;
+        transition: all 0.3s ease-in;
+    }
+
+    @media (max-width: 360px) {
+        padding: 16px;
+        transition: all 0.3s ease-in;
+    }
+}
+.calcCenterContainer {
+    position: relative;
+    justify: left;
+    top: 20px;
+    display: inline-block;
+    width: 30%;
+    min-width: 250px;
+
+    background-color: #fff;
+    padding: 20px;
     box-shadow: 2px 2px 96px #111;
     border-radius: 8px;
     transition: all 0.3s ease-in;
