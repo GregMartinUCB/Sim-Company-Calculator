@@ -178,14 +178,19 @@ function submitBuildings(){
 
     if(buildingDoms.length != productDoms.length){return}
     map = [];
+    abundanceCount = 0;
     buildingDoms.forEach((buildingSlot, i) => {
+
         buildingJSON = buildingsJson.find(
                         build => build.db_letter == buildingSlot.value);
         productJSON = resourceJson.find(
                         resource => resource.db_letter == productDoms[i].value);
         if(abundanceBuildings.find(abunBuild => abunBuild == buildingJSON.db_letter)){
+            console.log(abundanceDoms);
             if(abundanceDoms.length>1){
-                abundance = abundanceDoms.shift().value;
+
+                abundance = abundanceDoms[abundanceCount].value;
+                abundanceCount += 1;
             }
             else{
                 abundance = abundanceDoms.value;
@@ -220,7 +225,7 @@ function createBuildSlotObject(buildJSON,abundance,product,level){
         building.abundance = abundance;
         building.producedPerHour = product.producedPerHour *
                                         (1+(productionSpeed/100))*
-                                        (Number(abundace)/100)*
+                                        (Number(abundance)/100)*
                                         level;
     }else{
         building.producedPerHour = product.producedPerHour *
@@ -248,16 +253,277 @@ function createCenterPanel(){
     panel.appendChild(adminInput);
 
     panel.appendChild(document.createElement('hr'));
-    titleProducedSection = document.createElement('h2');
-    titleProducedSection.textContent = "Total Produced:";
-    panel.appendChild(titleProducedSection);
     uniqueProduced = reduceProducedList();
+    uniqueIngredients = reducedIngredientList(uniqueProduced);
 
-    uniqueProduced.forEach((uniqProduct, i) => {
-        //Left off Here!
+    // populateTotalProduced(panel,uniqueProduced);
+    // panel.appendChild(document.createElement('hr'));
+    // populateTotalConsumed(panel,uniqueIngredients);
+    // panel.appendChild(document.createElement('hr'));
+    populateNetProducts(panel,uniqueProduced,uniqueIngredients);
+
+    submitPricesButton = document.createElement('button');
+    submitPricesButton.id = "submitBuildings";
+    submitPricesButton.textContent = "Submit Prices";
+    submitPricesButton.className = "button";
+    submitPricesButton.onclick = function () {
+        createRightPanel();
+    }
+
+}
+
+function createRightPanel(){
+    //left off here.
+}
+
+function populateNetProducts(parentDom,uniqueProduced,uniqueIngredients){
+
+    const [toBuy, toSell] = determineBuyandSell(uniqueProduced,uniqueIngredients);
+    populateToSellTable(parentDom,toSell);
+    populateToBuyTable(parentDom,toBuy);
+
+}
+
+function populateToBuyTable(parentDom, toBuy){
+    toBuySection = document.createElement('h2');
+    toBuySection.textContent = "Products to Buy:";
+    parentDom.appendChild(toBuySection);
+
+    toBuyTable = document.createElement('table');
+    tableHead = document.createElement('tr');
+    productNameCol = document.createElement('th');
+    productNameCol.textContent = `Product`;
+    tableHead.appendChild(productNameCol);
+
+    perHourCol = document.createElement('th');
+    perHourCol.textContent = `Buy Per Hour`;
+    tableHead.appendChild(perHourCol);
+
+    perDayCol = document.createElement('th');
+    perDayCol.textContent = `Buy Per Day`;
+    tableHead.appendChild(perDayCol);
+
+    buyForCol = document.createElement('th');
+    buyForCol.textContent = `Buy Price`;
+    tableHead.appendChild(buyForCol);
+    toBuyTable.appendChild(tableHead);
+
+    toBuy.forEach((ingToBuy) => {
+        row = document.createElement('tr');
+        prodNameDom =  document.createElement('td');
+        prodNameDom.textContent = `${ingToBuy.name}`;
+        row.appendChild(prodNameDom);
+
+        perHourDom =  document.createElement('td');
+        perHourDom.textContent = `${ingToBuy.amountToBuy.toFixed(2)}`;
+        row.appendChild(perHourDom);
+
+        perDayDom =  document.createElement('td');
+        perDayDom.textContent = `${(ingToBuy.amountToBuy*24).toFixed(2)}`;
+        row.appendChild(perDayDom);
+
+        buyFor =  document.createElement('td');
+        currencySign = document.createElement('span');
+        currencySign.textContent = '$';
+        buyFor.appendChild(currencySign);
+        input = document.createElement('input');
+        input.type = 'number';
+        input.id = `${ingToBuy.name}BuyPrice`;
+        input.name = `buyPrice`;
+        buyFor.appendChild(input);
+        row.appendChild(buyFor);
+
+        toBuyTable.appendChild(row);
+    });
+    parentDom.appendChild(toBuyTable);
+}
+
+function populateToSellTable(parentDom, toSell){
+    titleToSellSection = document.createElement('h2');
+    titleToSellSection.textContent = "Products to Sell:";
+    parentDom.appendChild(titleToSellSection);
+
+    toSellTable = document.createElement('table');
+    tableHead = document.createElement('tr');
+    productNameCol = document.createElement('th');
+    productNameCol.textContent = `Product`;
+    tableHead.appendChild(productNameCol);
+
+    perHourCol = document.createElement('th');
+    perHourCol.textContent = `Sell Per Hour`;
+    tableHead.appendChild(perHourCol);
+
+    perDayCol = document.createElement('th');
+    perDayCol.textContent = `Sell Per Day`;
+    tableHead.appendChild(perDayCol);
+
+    sellForCol = document.createElement('th');
+    sellForCol.textContent = `Sell Price`;
+    tableHead.appendChild(sellForCol);
+    toSellTable.appendChild(tableHead);
+
+    toSell.forEach((sellable) => {
+        row = document.createElement('tr');
+        prodNameDom =  document.createElement('td');
+        prodNameDom.textContent = `${sellable.name}`;
+        row.appendChild(prodNameDom);
+
+        perHourDom =  document.createElement('td');
+        perHourDom.textContent = `${sellable.amountToSell.toFixed(2)}`;
+        row.appendChild(perHourDom);
+
+        perDayDom =  document.createElement('td');
+        perDayDom.textContent = `${(sellable.amountToSell*24).toFixed(2)}`;
+        row.appendChild(perDayDom);
+
+        sellFor =  document.createElement('td');
+        currencySign = document.createElement('span');
+        currencySign.textContent = '$';
+        sellFor.appendChild(currencySign);
+        input = document.createElement('input');
+        input.type = 'number';
+        input.id = `${sellable.name}SellPrice`;
+        input.name = `sellPrice`;
+        sellFor.appendChild(input);
+        row.appendChild(sellFor);
+
+        toSellTable.appendChild(row);
+    });
+    parentDom.appendChild(toSellTable);
+}
+
+function determineBuyandSell(uniqueProduced,uniqueIngredients){
+    toSell = [];
+    toBuy = [];
+    uniqueIngredients.forEach((ingredient) => {
+        buy = {};
+        sell = {};
+        productThatisIngredient = uniqueProduced.find(product =>
+            ingredient.db_letter == product.producing.db_letter);
+        if(productThatisIngredient){
+            net = productThatisIngredient.producedPerHour - ingredient.amountPerHour;
+            if(net < 0){
+                buy = {
+                    name:ingredient.name,
+                    db_letter:ingredient.db_letter,
+                    amountToBuy: Math.abs(net),
+                }
+                toBuy.push(buy);
+            }else{
+                sell = {
+                    name:ingredient.name,
+                    db_letter:ingredient.db_letter,
+                    amountToSell: net,
+                }
+                toSell.push(sell);
+            }
+        }
+        else{
+            console.log(ingredient);
+            buy = {
+                name:ingredient.name,
+                db_letter:ingredient.db_letter,
+                amountToBuy: ingredient.amountPerHour,
+            }
+            if(buy!={}){
+                toBuy.push(buy);
+            }
+        }
+    });
+    uniqueProduced.forEach((product) => {
+        alreadyIntoSell = toSell.find( sell =>
+                    product.producing.db_letter == sell.db_letter)
+        alreadyIntoBuy = toBuy.find( buy =>
+                    product.producing.db_letter == buy.db_letter)
+        if(!alreadyIntoSell && !alreadyIntoBuy){
+            sell = {
+                name:product.producing.name,
+                db_letter:product.producing.db_letter,
+                amountToSell: product.producedPerHour,
+            }
+            toSell.push(sell);
+        }
     });
 
+    return [toBuy, toSell]
+}
 
+function populateTotalProduced(parentDom, uniqueProduced){
+    titleProducedSection = document.createElement('h2');
+    titleProducedSection.textContent = "Produced:";
+    parentDom.appendChild(titleProducedSection);
+
+    producedTable = document.createElement('table');
+    tableHead = document.createElement('tr');
+    productNameCol = document.createElement('th');
+    productNameCol.textContent = `Product`;
+    tableHead.appendChild(productNameCol);
+
+    perHourCol = document.createElement('th');
+    perHourCol.textContent = `Produced Per Hour`;
+    tableHead.appendChild(perHourCol);
+
+    perDayCol = document.createElement('th');
+    perDayCol.textContent = `Produced Per Day`;
+    tableHead.appendChild(perDayCol);
+
+    producedTable.appendChild(tableHead);
+
+    uniqueProduced.forEach((product, i) => {
+            row = document.createElement('tr');
+            prodNameDom =  document.createElement('td');
+            prodNameDom.textContent = `${product.producing.name}`;
+            row.appendChild(prodNameDom);
+
+            perHourDom =  document.createElement('td');
+            perHourDom.textContent = `${product.producedPerHour.toFixed(2)}`;
+            row.appendChild(perHourDom);
+
+            perDayDom =  document.createElement('td');
+            perDayDom.textContent = `${(product.producedPerHour*24).toFixed(2)}`;
+            row.appendChild(perDayDom);
+            producedTable.appendChild(row);
+    });
+    parentDom.appendChild(producedTable);
+
+}
+
+function populateTotalConsumed(parentDom, uniqueIngredients){
+    titleConsumedSection = document.createElement('h2');
+    titleConsumedSection.textContent = "Consumed:";
+    parentDom.appendChild(titleConsumedSection);
+
+    consumedTable = document.createElement('table');
+    tableHead = document.createElement('tr');
+    ingredientNameCol = document.createElement('th');
+    ingredientNameCol.textContent = `Product`;
+    tableHead.appendChild(ingredientNameCol);
+
+    perHourCol = document.createElement('th');
+    perHourCol.textContent = `Consumed Per Hour`;
+    tableHead.appendChild(perHourCol);
+
+    perDayCol = document.createElement('th');
+    perDayCol.textContent = `Consumed Per Day`;
+    tableHead.appendChild(perDayCol);
+    consumedTable.appendChild(tableHead);
+
+    uniqueIngredients.forEach((ingredient, i) => {
+        row = document.createElement('tr');
+        ingredientNameDom =  document.createElement('td');
+        ingredientNameDom.textContent = `${ingredient.name}`;
+        row.appendChild(ingredientNameDom);
+
+        perHourDom =  document.createElement('td');
+        perHourDom.textContent = `${ingredient.amountPerHour.toFixed(2)}`;
+        row.appendChild(perHourDom);
+
+        perDayDom =  document.createElement('td');
+        perDayDom.textContent = `${(ingredient.amountPerHour*24).toFixed(2)}`;
+        row.appendChild(perDayDom);
+        consumedTable.appendChild(row);
+    });
+    parentDom.appendChild(consumedTable)
 }
 
 function calculateAdminValue(){
@@ -284,7 +550,6 @@ function reduceProducedList(){
             recorded = true;
         }
         //If duplicate found and not recorded
-        console.log(produced);
         if(duplicateProduced.length>1 && !recorded){
             totalProduced = 0;
             //adding up the total produced per hour
@@ -294,6 +559,7 @@ function reduceProducedList(){
             producedToPushDuplicate = JSON.parse(JSON.stringify(produced));
             producedToPushDuplicate.producedPerHour = totalProduced;
             reducedProduced.push(producedToPushDuplicate);
+
             recorded = true;
         }if(!recorded){
             reducedProduced.push(produced);
@@ -303,4 +569,33 @@ function reduceProducedList(){
     });
     console.log(reducedProduced);
     return reducedProduced
+}
+
+function reducedIngredientList(uniqueProduced){
+    ingredients = [];
+    uniqueProduced.forEach((product, i) => {
+
+        if(product.producing.ingredients.length){
+            product.producing.ingredients.forEach((ing) => {
+                dupIngredient = ingredients.find(ingred => ing.resource.db_letter ==
+                                                ingred.db_letter);
+                if(dupIngredient){
+                    dupIngredient.amountPerHour += product.producedPerHour*ing.amount;
+
+                }else{
+                    tempIng ={
+                        name : ing.resource.name,
+                        db_letter : ing.resource.db_letter,
+                        amountPerHour : product.producedPerHour*ing.amount
+                    };
+                    ingredients.push(tempIng);
+
+                }
+            });
+            console.log(JSON.parse(JSON.stringify(ingredients)));
+        }
+    });
+
+    return ingredients
+
 }
