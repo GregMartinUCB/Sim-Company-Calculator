@@ -2,6 +2,8 @@ var resourceJson =[];
 var buildingsJson =[];
 var buildingSlots =0;
 var map = [];
+var toBuyGlobal = [];
+var toSellGlobal = [];
 var productionSpeed = 0;
 const abundanceBuildings = ['M','Q','O'];
 
@@ -43,6 +45,7 @@ document.getElementById('createMap').onclick = function() {
 
     productionSpeed = document.getElementById('productionSpeed').value;
     if(productionSpeed<0){productionSpeed = 0;}
+
     addBuildingSlots();
 
 }
@@ -63,6 +66,7 @@ function addBuildingSlots(){
     submitBuildingButton.onclick = function () {
         submitBuildings();
     }
+    createExchangeorContractSelect(leftPanel);
     parentDom.appendChild(submitBuildingButton);
 }
 
@@ -186,7 +190,7 @@ function submitBuildings(){
         productJSON = resourceJson.find(
                         resource => resource.db_letter == productDoms[i].value);
         if(abundanceBuildings.find(abunBuild => abunBuild == buildingJSON.db_letter)){
-            console.log(abundanceDoms);
+            //console.log(abundanceDoms);
             if(abundanceDoms.length>1){
 
                 abundance = abundanceDoms[abundanceCount].value;
@@ -249,6 +253,7 @@ function createCenterPanel(){
     adminValue = calculateAdminValue();
     adminInput.value = (adminValue*100).toFixed(3);
 
+
     panel.appendChild(adminLabel);
     panel.appendChild(adminInput);
 
@@ -260,7 +265,8 @@ function createCenterPanel(){
     // panel.appendChild(document.createElement('hr'));
     // populateTotalConsumed(panel,uniqueIngredients);
     // panel.appendChild(document.createElement('hr'));
-    populateNetProducts(panel,uniqueProduced,uniqueIngredients);
+    [toBuyGlobal,toSellGlobal] = populateNetProducts(panel,uniqueProduced,
+                                                        uniqueIngredients);
 
     submitPricesButton = document.createElement('button');
     submitPricesButton.id = "submitBuildings";
@@ -269,11 +275,41 @@ function createCenterPanel(){
     submitPricesButton.onclick = function () {
         createRightPanel();
     }
+    panel.appendChild(submitPricesButton);
 
 }
 
 function createRightPanel(){
-    //left off here.
+    addPriceToBuySell();
+    revenue = determineRevenue();
+    expenses = determineExpenses();
+
+}
+
+function addPriceToBuySell(){
+    sellPrices = document.getElementsByName('sellPrice');
+    buyPrices = document.getElementsByName('buyPrice');
+    toSellGlobal.forEach((sellable, i) => {
+        sellable.price = Number(sellPrices[i].value);
+    });
+    console.log(toSellGlobal);
+    toBuyGlobal.forEach((ingredient, i) => {
+        ingredient.price = Number(buyPrices[i].value);
+    });
+    console.log(toBuyGlobal);
+}
+
+function determineRevenue(){
+    totalRevenue = 0;
+    toSellGlobal.forEach((sellable, i) => {
+        totalRevenue += sellable.amountToSell * sellable.price
+    });
+
+
+}
+
+function determineExpenses(){
+
 }
 
 function populateNetProducts(parentDom,uniqueProduced,uniqueIngredients){
@@ -281,7 +317,9 @@ function populateNetProducts(parentDom,uniqueProduced,uniqueIngredients){
     const [toBuy, toSell] = determineBuyandSell(uniqueProduced,uniqueIngredients);
     populateToSellTable(parentDom,toSell);
     populateToBuyTable(parentDom,toBuy);
+    determineTransportRequired(toBuy,toSell);
 
+    return [toBuy, toSell]
 }
 
 function populateToBuyTable(parentDom, toBuy){
@@ -414,12 +452,13 @@ function determineBuyandSell(uniqueProduced,uniqueIngredients){
                     name:ingredient.name,
                     db_letter:ingredient.db_letter,
                     amountToSell: net,
+                    transportation:ingredient.resource.transportation,
                 }
                 toSell.push(sell);
             }
         }
         else{
-            console.log(ingredient);
+            //console.log(ingredient);
             buy = {
                 name:ingredient.name,
                 db_letter:ingredient.db_letter,
@@ -440,12 +479,87 @@ function determineBuyandSell(uniqueProduced,uniqueIngredients){
                 name:product.producing.name,
                 db_letter:product.producing.db_letter,
                 amountToSell: product.producedPerHour,
+                transportation:product.producing.transportation,
             }
             toSell.push(sell);
         }
     });
 
+    [toBuy, toSell] = determineTransportRequired(toBuy,toSell);
+
     return [toBuy, toSell]
+}
+
+function determineTransportRequired(toBuy, toSell){
+    buy = {};
+    transNeeded = 0;
+    toSell.forEach((product, i) => {
+        transNeeded += product.amountToSell * product.transportation;
+    });
+    contractInput = document.getElementById('sellToContract');
+    if(contractInput.checked){
+        transNeeded /= 2;
+    }
+    producedTransport = toSell.find(sell => sell.db_letter == 13)
+    if(producedTransport){
+        netTrans = producedTransport.amountToSell - transNeeded;
+        if(netTrans < 0){
+            buy = {
+                name:producedTransport.name,
+                db_letter:producedTransport.db_letter,
+                amountToBuy: Math.abs(netTrans),
+            }
+            toBuy.push(buy);
+            transportationIndex = toSell.findIndex(itemtoSell =>
+                            itemtoSell.db_letter == producedTransport.db_letter)
+            toSell.splice(transportationIndex,1);
+        }
+        else{
+            producedTransport.amountToSell = netTrans
+        }
+    }
+    return [toBuy,toSell]
+}
+
+function createExchangeorContractSelect(parentDom){
+    contractOrExchangeLabel = document.createElement('label');
+    contractOrExchangeLabel.for = `contractOrExchangeSelection`;
+    parentDom.appendChild(contractOrExchangeLabel);
+
+    contractOrExchangeDiv = document.createElement('div');
+    contractOrExchangeDiv.className = 'row';
+
+    contractDiv = document.createElement('div');
+    exchangeDiv = document.createElement('div');
+    contractDiv.className = 'column';
+    exchangeDiv.className = 'column';
+
+    contractLabel = document.createElement('label');
+    contractLabel.for = 'sellToContract';
+    contractLabel.textContent = 'Contract';
+    contract =  document.createElement('input');
+    contract.type = 'radio';
+    contract.id = 'sellToContract';
+    contract.name = 'sellWhereButton';
+    contract.value = 'contract';
+    contract.checked = true;
+
+    exchangeLabel = document.createElement('label');
+    exchangeLabel.for = 'sellToExchange';
+    exchangeLabel.textContent = 'Exchange';
+    exchange =  document.createElement('input');
+    exchange.type = 'radio';
+    exchange.id = 'sellToExchange';
+    exchange.name = 'sellWhereButton';
+    exchange.value = 'exchange';
+
+    contractDiv.appendChild(contractLabel);
+    contractDiv.appendChild(contract);
+    exchangeDiv.appendChild(exchangeLabel);
+    exchangeDiv.appendChild(exchange);
+    contractOrExchangeDiv.appendChild(contractDiv);
+    contractOrExchangeDiv.appendChild(exchangeDiv);
+    parentDom.appendChild(contractOrExchangeDiv);
 }
 
 function populateTotalProduced(parentDom, uniqueProduced){
@@ -592,7 +706,7 @@ function reducedIngredientList(uniqueProduced){
 
                 }
             });
-            console.log(JSON.parse(JSON.stringify(ingredients)));
+            //console.log(JSON.parse(JSON.stringify(ingredients)));
         }
     });
 
