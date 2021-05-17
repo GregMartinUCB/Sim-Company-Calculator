@@ -4,6 +4,8 @@ var buildingSlots =0;
 var map = [];
 var toBuyGlobal = [];
 var toSellGlobal = [];
+var uniqueProducedGlobal = [];
+var uniqueIngredientsGlobal =[];
 var productionSpeed = 0;
 const abundanceBuildings = ['M','Q','O'];
 
@@ -20,13 +22,11 @@ async function getResources(){
     //     resourceSelection.appendChild(opt);
     // });
 
-    //console.log(resourceJson);
 }
 async function getBuildings(){
     const buildingsResponse = await fetch('/buildings');
     buildingsJson = await buildingsResponse.json();
     console.log(buildingsJson);
-    //console.log(resourceJson);
 }
 
 function delChildren(domElement){
@@ -190,7 +190,6 @@ function submitBuildings(){
         productJSON = resourceJson.find(
                         resource => resource.db_letter == productDoms[i].value);
         if(abundanceBuildings.find(abunBuild => abunBuild == buildingJSON.db_letter)){
-            //console.log(abundanceDoms);
             if(abundanceDoms.length>1){
 
                 abundance = abundanceDoms[abundanceCount].value;
@@ -213,7 +212,6 @@ function submitBuildings(){
         build = createBuildSlotObject(buildingJSON,abundance,productJSON,level);
         map.push(build);
     });
-    //console.log(map);
     createCenterPanel();
 }
 
@@ -250,6 +248,7 @@ function createCenterPanel(){
     adminInput = document.createElement('input');
     adminInput.id = 'adminInput';
     adminInput.type = 'number';
+    adminInput.required = true;
     adminValue = calculateAdminValue();
     adminInput.value = (adminValue*100).toFixed(3);
 
@@ -259,7 +258,9 @@ function createCenterPanel(){
 
     panel.appendChild(document.createElement('hr'));
     uniqueProduced = reduceProducedList();
+    uniqueProducedGlobal = JSON.parse(JSON.stringify(uniqueProduced));
     uniqueIngredients = reducedIngredientList(uniqueProduced);
+    uniqueIngredientsGlobal = JSON.parse(JSON.stringify(uniqueIngredients));
 
     // populateTotalProduced(panel,uniqueProduced);
     // panel.appendChild(document.createElement('hr'));
@@ -280,10 +281,275 @@ function createCenterPanel(){
 }
 
 function createRightPanel(){
+    rightPanel = document.getElementById('rightContainer');
+    delChildren(rightPanel);
     addPriceToBuySell();
-    revenue = determineRevenue();
-    expenses = determineExpenses();
 
+    revenues = determineRevenues();
+    ingredientExpenses = determineIngredientExpenses();
+    [totalWorkerCost, totalAdminCost] = determineTotalLaborCost();
+    totalRevenue = determineTotalRevenue(revenues);
+    totalExpense = determineTotalExpenses(ingredientExpenses,totalWorkerCost, totalAdminCost);
+
+    totalProfitLabel = document.createElement('h3');
+    totalProfitLabel.textContent=`Total Profit: `;
+    rightPanel.appendChild(totalProfitLabel);
+    populateProfitTable();
+
+    totalRevenueLabel = document.createElement('h3');
+    totalRevenueLabel.textContent= `Revenues: `;
+    rightPanel.appendChild(totalRevenueLabel);
+    populateRevenuesTable(rightPanel,revenues);
+
+    totalExpenseLabel = document.createElement('h3');
+    totalExpenseLabel.textContent=`Expenses: `;
+    rightPanel.appendChild(totalExpenseLabel);
+    populateExpensesTable(rightPanel,ingredientExpenses,totalWorkerCost, totalAdminCost);
+
+}
+
+function populateProfitTable(){
+    console.log('uniqueProduced');
+    console.log(uniqueProducedGlobal);
+    adminPercent = Number(document.getElementById('adminInput').value);
+    toSellGlobal.forEach((soldItem, i) => {
+        profitPerUnit =0;
+        productionData = uniqueProducedGlobal.find(product =>
+                                            product.producing.name == soldItem.name)
+        unitWorkerCost = productionData.producing.baseSalary/productionData.producedPerHour;
+        unitLaborCost = unitWorkerCost * (1-adminPercent/100);
+        totalIngCost = getTotalIngredientCost(productionData.producing.ingredients);
+
+
+    });
+}
+
+function getTotalIngredientCost (ingredients){
+    var totalingCost;
+    ingredients.forEach((ing, i) => {
+        const makingItOurself = uniqueProducedGlobal.find(product =>
+                                            product.producing.name == ing.resource.name)
+        if(!makingItOurself){
+            const ingFromBuyListData = toBuyGlobal.find(globalBuy=>
+                                                ing.resource.name == globalBuy.name)
+            totalIngCost += ingFromBuyListData.price * ing.amount;
+            return totalIngCost
+        }
+        else if (){
+            /*
+            amount: 15
+            resource:
+                db_letter: 103
+                image: "images/resources/cement.png"
+                name: "Cement"
+                research: false
+                retailable: true
+                transportation: 1
+            */
+            var totalProduced = makingItOurself.producedPerhour;
+            var consumedIngredient = uniqueIngredientsGlobal.find(ingredient =>
+                                        ingredient.name == makingItOurself.producing.name);
+            if(!consumedIngredient){throw(new Error('Consumed ingredient not found.'))}
+
+            var totalConsumed = consumedIngredient.amountPerHour ? consumedIngredient.amountPerHour : 1;
+            var percentConsumed = (totalProduced-totalConsumed)/totalConsumed;
+            var sourcingCost = getTotalIngredientCost(makingItOurself.producing.ingredients)
+        }
+        else{
+            ingFromSellListData = toSellGlobal.find(product =>
+                                        product.name == ing.resource.name)
+            if(ingFromSellListData){
+
+            }
+        }
+    });
+    return totalingCost
+}
+
+function populateRevenuesTable(parentDom,revenues){
+    revenuesTable = document.createElement('table');
+    tableHead = document.createElement('tr');
+    productNameCol = document.createElement('th');
+    productNameCol.textContent = `Product`;
+    tableHead.appendChild(productNameCol);
+
+    perHourCol = document.createElement('th');
+    perHourCol.textContent = `Revenue /hour:`;
+    tableHead.appendChild(perHourCol);
+
+    perDayCol = document.createElement('th');
+    perDayCol.textContent = `Revenue /day:`;
+    tableHead.appendChild(perDayCol);
+    revenuesTable.appendChild(tableHead);
+
+    totalRevenue = 0;
+    revenues.forEach((revSource, i) => {
+        row = document.createElement('tr');
+        prodNameDom =  document.createElement('td');
+        prodNameDom.textContent = `${revSource.name}`;
+        row.appendChild(prodNameDom);
+
+        perHourDom =  document.createElement('td');
+        perHourDom.textContent = `$${revSource.revenue.toFixed(2)}`;
+        row.appendChild(perHourDom);
+
+        perDayDom =  document.createElement('td');
+        perDayDom.textContent = `$${(revSource.revenue*24).toFixed(2)}`;
+        row.appendChild(perDayDom);
+        revenuesTable.appendChild(row);
+        totalRevenue += revSource.revenue;
+    });
+
+    sumRow = document.createElement('tr');
+    sumLabel = document.createElement('td');
+    sumLabel.textContent = `TOTAL`;
+    sumRow.appendChild(sumLabel);
+    sumHour = document.createElement('td');
+    sumHour.textContent = `$${(totalRevenue).toFixed(2)}`;
+    sumRow.appendChild(sumHour);
+    sumDay = document.createElement('td');
+    sumDay.textContent = `$${(totalRevenue*24).toFixed(2)}`;
+    sumRow.appendChild(sumDay);
+    revenuesTable.appendChild(sumRow);
+    parentDom.appendChild(revenuesTable);
+
+}
+
+function populateExpensesTable(parentDom,ingredientExpenses,totalWorkerCost, totalAdminCost){
+    expensesTable = document.createElement('table');
+    tableHead = document.createElement('tr');
+    productNameCol = document.createElement('th');
+    productNameCol.textContent = `Source`;
+    tableHead.appendChild(productNameCol);
+
+    perHourCol = document.createElement('th');
+    perHourCol.textContent = `Expense /hour:`;
+    tableHead.appendChild(perHourCol);
+
+    perDayCol = document.createElement('th');
+    perDayCol.textContent = `Expense /day:`;
+    tableHead.appendChild(perDayCol);
+    expensesTable.appendChild(tableHead);
+
+    totalExpense=0;
+
+    ingredientExpenses.forEach((ing, i) => {
+        row = document.createElement('tr');
+        prodNameDom =  document.createElement('td');
+        prodNameDom.textContent = `${ing.name}`;
+        row.appendChild(prodNameDom);
+
+        perHourDom =  document.createElement('td');
+        perHourDom.textContent = `$${ing.expense.toFixed(2)}`;
+        row.appendChild(perHourDom);
+
+        perDayDom =  document.createElement('td');
+        perDayDom.textContent = `$${(ing.expense*24).toFixed(2)}`;
+        row.appendChild(perDayDom);
+        expensesTable.appendChild(row);
+        totalExpense += ing.expense;
+    });
+
+    workerCostRow = document.createElement('tr');
+    workerCostLabel = document.createElement('td');
+    workerCostLabel.textContent = `Workers`;
+    workerCostRow.appendChild(workerCostLabel);
+    workerCostHour = document.createElement('td');
+    workerCostHour.textContent = `$${(totalWorkerCost).toFixed(2)}`;
+    workerCostRow.appendChild(workerCostHour);
+    workerCostDay = document.createElement('td');
+    workerCostDay.textContent = `$${(totalWorkerCost*24).toFixed(2)}`;
+    workerCostRow.appendChild(workerCostDay);
+    expensesTable.appendChild(workerCostRow);
+
+    adminCostRow = document.createElement('tr');
+    adminCostLabel = document.createElement('td');
+    adminCostLabel.textContent = `Admin`;
+    adminCostRow.appendChild(adminCostLabel);
+    adminCostHour = document.createElement('td');
+    adminCostHour.textContent = `$${(totalAdminCost).toFixed(2)}`;
+    adminCostRow.appendChild(adminCostHour);
+    adminCostDay = document.createElement('td');
+    adminCostDay.textContent = `$${(totalAdminCost*24).toFixed(2)}`;
+    adminCostRow.appendChild(adminCostDay);
+    expensesTable.appendChild(adminCostRow);
+
+    totalExpense += totalWorkerCost + totalAdminCost;
+    sumRow = document.createElement('tr');
+    sumLabel = document.createElement('td');
+    sumLabel.textContent = `TOTAL`;
+    sumRow.appendChild(sumLabel);
+    sumHour = document.createElement('td');
+    sumHour.textContent = `$${(totalExpense).toFixed(2)}`;
+    sumRow.appendChild(sumHour);
+    sumDay = document.createElement('td');
+    sumDay.textContent = `$${(totalExpense*24).toFixed(2)}`;
+    sumRow.appendChild(sumDay);
+    expensesTable.appendChild(sumRow);
+
+    parentDom.appendChild(expensesTable);
+}
+
+function determineRevenues(){
+    revenue = {};
+    revenues = [];
+    toSellGlobal.forEach((productToSell, i) => {
+        revenue = {
+            name:productToSell.name,
+            db_letter:productToSell.db_letter,
+            revenue:productToSell.amount * productToSell.price,
+        }
+        revenues.push(revenue);
+    });
+    console.log('Revenues:');
+    console.log(revenues);
+    return revenues
+}
+
+function determineIngredientExpenses(){
+    ingredientExpense = {};
+    ingredientExpenses = [];
+    toBuyGlobal.forEach((productToBuy, i) => {
+        ingredientExpense = {
+            name:productToBuy.name,
+            db_letter:productToBuy.db_letter,
+            expense:productToBuy.amount * productToBuy.price,
+        }
+        ingredientExpenses.push(ingredientExpense);
+    });
+    console.log('Ingredient Expenses:');
+    console.log(ingredientExpenses);
+    return ingredientExpenses
+}
+
+function determineTotalLaborCost(){
+    console.log(uniqueProducedGlobal);
+    totalWorkerCost = 0;
+    uniqueProducedGlobal.forEach((product, i) => {
+        workerCost = product.producing.baseSalary * product.level;
+        totalWorkerCost += workerCost;
+    });
+    adminPercent = Number(document.getElementById('adminInput').value);
+    adminCost = totalWorkerCost * adminPercent/100;
+
+    return [totalWorkerCost, adminCost]
+}
+
+function determineTotalRevenue(revenues){
+    totalRevenue = 0;
+    revenues.forEach((rev, i) => {
+        totalRevenue += rev.revenue;
+    });
+    return totalRevenue
+}
+
+function determineTotalExpenses(ingredientExpenses,totalWorkerCost, totalAdminCost){
+    totalExpense = 0;
+    ingredientExpenses.forEach((ing, i) => {
+        totalExpense += ing.expense;
+    });
+    totalExpense += totalWorkerCost + totalAdminCost;
+    return totalExpense
 }
 
 function addPriceToBuySell(){
@@ -292,24 +558,13 @@ function addPriceToBuySell(){
     toSellGlobal.forEach((sellable, i) => {
         sellable.price = Number(sellPrices[i].value);
     });
+    console.log('To Sell:');
     console.log(toSellGlobal);
     toBuyGlobal.forEach((ingredient, i) => {
         ingredient.price = Number(buyPrices[i].value);
     });
+    console.log('To Buy:');
     console.log(toBuyGlobal);
-}
-
-function determineRevenue(){
-    totalRevenue = 0;
-    toSellGlobal.forEach((sellable, i) => {
-        totalRevenue += sellable.amountToSell * sellable.price
-    });
-
-
-}
-
-function determineExpenses(){
-
 }
 
 function populateNetProducts(parentDom,uniqueProduced,uniqueIngredients){
@@ -353,11 +608,11 @@ function populateToBuyTable(parentDom, toBuy){
         row.appendChild(prodNameDom);
 
         perHourDom =  document.createElement('td');
-        perHourDom.textContent = `${ingToBuy.amountToBuy.toFixed(2)}`;
+        perHourDom.textContent = `${ingToBuy.amount.toFixed(2)}`;
         row.appendChild(perHourDom);
 
         perDayDom =  document.createElement('td');
-        perDayDom.textContent = `${(ingToBuy.amountToBuy*24).toFixed(2)}`;
+        perDayDom.textContent = `${(ingToBuy.amount*24).toFixed(2)}`;
         row.appendChild(perDayDom);
 
         buyFor =  document.createElement('td');
@@ -366,6 +621,7 @@ function populateToBuyTable(parentDom, toBuy){
         buyFor.appendChild(currencySign);
         input = document.createElement('input');
         input.type = 'number';
+        input.required = true;
         input.id = `${ingToBuy.name}BuyPrice`;
         input.name = `buyPrice`;
         buyFor.appendChild(input);
@@ -407,11 +663,11 @@ function populateToSellTable(parentDom, toSell){
         row.appendChild(prodNameDom);
 
         perHourDom =  document.createElement('td');
-        perHourDom.textContent = `${sellable.amountToSell.toFixed(2)}`;
+        perHourDom.textContent = `${sellable.amount.toFixed(2)}`;
         row.appendChild(perHourDom);
 
         perDayDom =  document.createElement('td');
-        perDayDom.textContent = `${(sellable.amountToSell*24).toFixed(2)}`;
+        perDayDom.textContent = `${(sellable.amount*24).toFixed(2)}`;
         row.appendChild(perDayDom);
 
         sellFor =  document.createElement('td');
@@ -420,6 +676,7 @@ function populateToSellTable(parentDom, toSell){
         sellFor.appendChild(currencySign);
         input = document.createElement('input');
         input.type = 'number';
+        input.required = true;
         input.id = `${sellable.name}SellPrice`;
         input.name = `sellPrice`;
         sellFor.appendChild(input);
@@ -433,7 +690,9 @@ function populateToSellTable(parentDom, toSell){
 function determineBuyandSell(uniqueProduced,uniqueIngredients){
     toSell = [];
     toBuy = [];
+    console.log(uniqueIngredients);
     uniqueIngredients.forEach((ingredient) => {
+        console.log(ingredient);
         buy = {};
         sell = {};
         productThatisIngredient = uniqueProduced.find(product =>
@@ -444,25 +703,26 @@ function determineBuyandSell(uniqueProduced,uniqueIngredients){
                 buy = {
                     name:ingredient.name,
                     db_letter:ingredient.db_letter,
-                    amountToBuy: Math.abs(net),
+                    amount: Math.abs(net),
+                    transportation:ingredient.transportation,
                 }
                 toBuy.push(buy);
             }else{
                 sell = {
                     name:ingredient.name,
                     db_letter:ingredient.db_letter,
-                    amountToSell: net,
-                    transportation:ingredient.resource.transportation,
+                    amount: net,
+                    transportation:ingredient.transportation,
                 }
                 toSell.push(sell);
             }
         }
         else{
-            //console.log(ingredient);
             buy = {
                 name:ingredient.name,
                 db_letter:ingredient.db_letter,
-                amountToBuy: ingredient.amountPerHour,
+                amount: ingredient.amountPerHour,
+                transportation:ingredient.transportation,
             }
             if(buy!={}){
                 toBuy.push(buy);
@@ -478,7 +738,7 @@ function determineBuyandSell(uniqueProduced,uniqueIngredients){
             sell = {
                 name:product.producing.name,
                 db_letter:product.producing.db_letter,
-                amountToSell: product.producedPerHour,
+                amount: product.producedPerHour,
                 transportation:product.producing.transportation,
             }
             toSell.push(sell);
@@ -494,7 +754,7 @@ function determineTransportRequired(toBuy, toSell){
     buy = {};
     transNeeded = 0;
     toSell.forEach((product, i) => {
-        transNeeded += product.amountToSell * product.transportation;
+        transNeeded += product.amount * product.transportation;
     });
     contractInput = document.getElementById('sellToContract');
     if(contractInput.checked){
@@ -502,12 +762,12 @@ function determineTransportRequired(toBuy, toSell){
     }
     producedTransport = toSell.find(sell => sell.db_letter == 13)
     if(producedTransport){
-        netTrans = producedTransport.amountToSell - transNeeded;
+        netTrans = producedTransport.amount - transNeeded;
         if(netTrans < 0){
             buy = {
                 name:producedTransport.name,
                 db_letter:producedTransport.db_letter,
-                amountToBuy: Math.abs(netTrans),
+                amount: Math.abs(netTrans),
             }
             toBuy.push(buy);
             transportationIndex = toSell.findIndex(itemtoSell =>
@@ -515,7 +775,7 @@ function determineTransportRequired(toBuy, toSell){
             toSell.splice(transportationIndex,1);
         }
         else{
-            producedTransport.amountToSell = netTrans
+            producedTransport.amount = netTrans
         }
     }
     return [toBuy,toSell]
@@ -666,12 +926,15 @@ function reduceProducedList(){
         //If duplicate found and not recorded
         if(duplicateProduced.length>1 && !recorded){
             totalProduced = 0;
+            totalLevel = 0;
             //adding up the total produced per hour
             duplicateProduced.forEach((prod, i) => {
                 totalProduced += prod.producedPerHour;
+                totalLevel += prod.level;
             });
             producedToPushDuplicate = JSON.parse(JSON.stringify(produced));
             producedToPushDuplicate.producedPerHour = totalProduced;
+            producedToPushDuplicate.level = totalLevel;
             reducedProduced.push(producedToPushDuplicate);
 
             recorded = true;
@@ -681,12 +944,12 @@ function reduceProducedList(){
         }
         recorded=false;
     });
-    console.log(reducedProduced);
     return reducedProduced
 }
 
 function reducedIngredientList(uniqueProduced){
     ingredients = [];
+    console.log(uniqueProduced);
     uniqueProduced.forEach((product, i) => {
 
         if(product.producing.ingredients.length){
@@ -700,13 +963,13 @@ function reducedIngredientList(uniqueProduced){
                     tempIng ={
                         name : ing.resource.name,
                         db_letter : ing.resource.db_letter,
-                        amountPerHour : product.producedPerHour*ing.amount
+                        amountPerHour : product.producedPerHour*ing.amount,
+                        transportation: product.producing.transportation
                     };
                     ingredients.push(tempIng);
 
                 }
             });
-            //console.log(JSON.parse(JSON.stringify(ingredients)));
         }
     });
 
