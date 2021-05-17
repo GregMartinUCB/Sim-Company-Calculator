@@ -294,7 +294,7 @@ function createRightPanel(){
     totalProfitLabel = document.createElement('h3');
     totalProfitLabel.textContent=`Total Profit: `;
     rightPanel.appendChild(totalProfitLabel);
-    populateProfitTable();
+    populateProfitTable(rightPanel);
 
     totalRevenueLabel = document.createElement('h3');
     totalRevenueLabel.textContent= `Revenues: `;
@@ -308,61 +308,141 @@ function createRightPanel(){
 
 }
 
-function populateProfitTable(){
+function populateProfitTable(parentDom){
     console.log('uniqueProduced');
     console.log(uniqueProducedGlobal);
     adminPercent = Number(document.getElementById('adminInput').value);
+
+    var tableData = [];
+    var headings = [`Product`,
+                    `Source Cost`,
+                    `Profit Per Unit`,
+                    `Profit Per Hour`,
+                    `Profit Per Day`];
+    tableData.push(headings);
+    var totalProfitPerHour = 0;
     toSellGlobal.forEach((soldItem, i) => {
-        profitPerUnit =0;
+        var totalCostToMake = 0;
+        var profitPerUnit =0;
+        //Adding Transport Cost
+        var transportCost =0;
         productionData = uniqueProducedGlobal.find(product =>
                                             product.producing.name == soldItem.name)
-        unitWorkerCost = productionData.producing.baseSalary/productionData.producedPerHour;
-        unitLaborCost = unitWorkerCost * (1-adminPercent/100);
-        totalIngCost = getTotalIngredientCost(productionData.producing.ingredients);
 
+        if(productionData.producing.ingredients.length){
+            totalIngCost = getTotalIngredientCost(productionData.producing.ingredients);
+            totalCostToMake = totalIngCost + getUnitLaborCost(productionData,adminPercent);
+        }
+        else{
+            totalCostToMake = getUnitLaborCost(productionData,adminPercent);
+        }
+
+        profitPerUnit = Number(soldItem.price) - totalCostToMake;
+        totalProfitPerHour += profitPerUnit*soldItem.amount;
+        var rowData =  [`${soldItem.name}`,
+                        totalCostToMake.toFixed(3),
+                        profitPerUnit.toFixed(3),
+                        (profitPerUnit*soldItem.amount).toFixed(2),
+                        (profitPerUnit*soldItem.amount*24).toFixed(2)];
+        tableData.push(rowData)
 
     });
+    sumRow = [
+        `Total`,
+        '',
+        '',
+        totalProfitPerHour.toFixed(2),
+        (totalProfitPerHour*24).toFixed(2)
+    ]
+    tableData.push(sumRow);
+    createTable(parentDom,tableData);
+}
+
+function createTable(parentDom, tableData){
+    const table = document.createElement('table');
+    const tableHead = document.createElement('tr');
+    tableData[0].forEach((heading, i) => {
+        colHeading = document.createElement('th');
+        colHeading.textContent = `${heading}`;
+        tableHead.appendChild(colHeading);
+    });
+    table.appendChild(tableHead)
+    tableData.forEach((row, i) => {
+        if(i!=0){
+            tableRow= document.createElement('tr');
+            row.forEach((cell, i) => {
+                cellDom =  document.createElement('td');
+                cellDom.textContent = `${cell}`;
+                tableRow.appendChild(cellDom);
+            });
+            table.appendChild(tableRow);
+        }
+    });
+
+    parentDom.appendChild(table);
+}
+
+function getUnitLaborCost(productionData, adminPercent){
+    unitWorkerCost = (productionData.producing.baseSalary*productionData.level)/
+                                        productionData.producedPerHour;
+    unitLaborCost = unitWorkerCost * (1+adminPercent/100);
+    console.log(`Labor Cost:${unitLaborCost}`);
+    return unitLaborCost
 }
 
 function getTotalIngredientCost (ingredients){
-    var totalingCost;
+    const adminPercent = Number(document.getElementById('adminInput').value);
+    var totalingCost = 0;
     ingredients.forEach((ing, i) => {
         const makingItOurself = uniqueProducedGlobal.find(product =>
                                             product.producing.name == ing.resource.name)
+
+        //Case where we are not making the ingredient ourself
+        //All cost comes from buying it
         if(!makingItOurself){
             const ingFromBuyListData = toBuyGlobal.find(globalBuy=>
                                                 ing.resource.name == globalBuy.name)
-            totalIngCost += ingFromBuyListData.price * ing.amount;
-            return totalIngCost
+            totalingCost += ingFromBuyListData.price * ing.amount;
+            console.log(totalingCost);
         }
-        else if (){
-            /*
-            amount: 15
-            resource:
-                db_letter: 103
-                image: "images/resources/cement.png"
-                name: "Cement"
-                research: false
-                retailable: true
-                transportation: 1
-            */
-            var totalProduced = makingItOurself.producedPerhour;
+        //Case where the ingredient does not have ingredients
+        //All cost comes from labor
+        else if(!makingItOurself.producing.ingredients.length){
+            totalingCost += getUnitLaborCost(makingItOurself,adminPercent)
+        }
+        //Case where we are making it and this ingredient has ingredients.
+        //Cost comes from either producing 100% of our demand.
+        //or a mix of buying and our own production line costs.
+        else{
+            var totalProduced = makingItOurself.producedPerHour;
             var consumedIngredient = uniqueIngredientsGlobal.find(ingredient =>
                                         ingredient.name == makingItOurself.producing.name);
             if(!consumedIngredient){throw(new Error('Consumed ingredient not found.'))}
 
             var totalConsumed = consumedIngredient.amountPerHour ? consumedIngredient.amountPerHour : 1;
-            var percentConsumed = (totalProduced-totalConsumed)/totalConsumed;
+            var percentBought = (totalConsumed-totalProduced)/totalConsumed;
+            var laborCost = getUnitLaborCost(makingItOurself,adminPercent);
             var sourcingCost = getTotalIngredientCost(makingItOurself.producing.ingredients)
-        }
-        else{
-            ingFromSellListData = toSellGlobal.find(product =>
-                                        product.name == ing.resource.name)
-            if(ingFromSellListData){
 
+            console.log(makingItOurself);
+
+            if(percentBought >= 0){
+                //case where we need to buy some to suppliment our consumption
+                const ingFromBuyListData = toBuyGlobal.find(globalBuy=>
+                                                    ing.resource.name == globalBuy.name)
+                totalingCost += percentBought*(ingFromBuyListData.price*ing.amount)+
+                        (1-percentBought)*sourcingCost;
+                totalingCost += laborCost;
             }
+            //case where we are making more than we consume.
+            //All cost comes from our production.
+            if(percentBought < 0){
+                totalingCost += sourcingCost + laborCost;
+            }
+            console.log(totalingCost);
         }
     });
+
     return totalingCost
 }
 
