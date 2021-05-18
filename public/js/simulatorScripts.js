@@ -380,7 +380,6 @@ function getTransportCost(itemToSell){
     var transportationPerItem = 0;
 
     if(producingTransportation){
-        console.log('Should not be here 382');
         var totalIngCost = getTotalIngredientCost(producingTransportation.producing.ingredients);
         transportationUnitCost = totalIngCost + getUnitLaborCost(producingTransportation,adminPercent);
     }
@@ -394,14 +393,10 @@ function getTransportCost(itemToSell){
     }
     if(contract.checked){
         transportationPerItem = itemToSell.transportation /2;
-        console.log(`Trans unit cost:${transportationUnitCost}`);
-        console.log(itemToSell);
     }
     else{
         transportationPerItem = itemToSell.transportation;
     }
-    console.log(`Trans per item:${transportationPerItem}`);
-
     return transportationPerItem * transportationUnitCost
 }
 
@@ -451,20 +446,17 @@ function getTotalIngredientCost (ingredients){
                                                 ing.resource.name == globalBuy.name)
             totalingCost += ingFromBuyListData.price * ing.amount;
 
-            console.log(ing.resource.name);
-            console.log(`Sourcing Cost: ${totalingCost}`);
-
         }
         //Case where the ingredient does not have ingredients
         //All cost comes from labor
         else if(!makingItOurself.producing.ingredients.length){
-            totalingCost += getUnitLaborCost(makingItOurself,adminPercent)
+            totalingCost += getUnitLaborCost(makingItOurself,adminPercent)*ing.amount;
         }
         //Case where we are making it and this ingredient has ingredients.
         //Cost comes from either producing 100% of our demand.
         //or a mix of buying and our own production line costs.
         else{
-            console.log(ing.resource.name);
+
             var totalProduced = makingItOurself.producedPerHour;
             var consumedIngredient = uniqueIngredientsGlobal.find(ingredient =>
                                         ingredient.name == makingItOurself.producing.name);
@@ -476,10 +468,9 @@ function getTotalIngredientCost (ingredients){
             var sourcingCost = getTotalIngredientCost(makingItOurself.producing.ingredients)
             sourcingCost = sourcingCost * ing.amount;
             laborCost = laborCost * ing.amount;
-            console.log(`Sourcing Cost: ${sourcingCost}`);
-            console.log(`Labor Cost:${laborCost}`);
+
             if(percentBought >= 0){
-                console.log(percentBought);
+
 
                 //case where we need to buy some to suppliment our consumption
                 const ingFromBuyListData = toBuyGlobal.find(globalBuy=>
@@ -492,7 +483,7 @@ function getTotalIngredientCost (ingredients){
             //case where we are making more than we consume.
             //All cost comes from our production.
             if(percentBought < 0){
-                console.log(percentBought);
+
                 totalingCost += sourcingCost + laborCost;
             }
         }
