@@ -279,30 +279,42 @@ function createCenterPanel(){
 }
 
 function createRightPanel(){
-    rightPanel = document.getElementById('rightContainer');
+    var rightPanel = document.getElementById('rightContainer');
     delChildren(rightPanel);
     addPriceToBuySell();
 
-    revenues = determineRevenues();
+    var revenues = determineRevenues();
     ingredientExpenses = determineIngredientExpenses();
     [totalWorkerCost, totalAdminCost] = determineTotalLaborCost();
 
 
-    totalProfitLabel = document.createElement('h3');
+    var totalProfitLabel = document.createElement('h3');
     totalProfitLabel.textContent=`Total Profit: `;
     rightPanel.appendChild(totalProfitLabel);
     populateProfitTable(rightPanel);
 
-    totalRevenueLabel = document.createElement('h3');
+    var buildingCostLabel = document.createElement('h3');
+    buildingCostLabel.textContent=`Building Cost: `;
+    rightPanel.appendChild(buildingCostLabel);
+    var totalCostToBuild = determineTotalBuildCost();
+    populateTotalBuildCost(rightPanel,totalCostToBuild);
+
+    var totalRevenueLabel = document.createElement('h3');
     totalRevenueLabel.textContent= `Revenues: `;
     rightPanel.appendChild(totalRevenueLabel);
     populateRevenuesTable(rightPanel,revenues);
 
-    totalExpenseLabel = document.createElement('h3');
+    var totalExpenseLabel = document.createElement('h3');
     totalExpenseLabel.textContent=`Expenses: `;
     rightPanel.appendChild(totalExpenseLabel);
     populateExpensesTable(rightPanel,ingredientExpenses,totalWorkerCost, totalAdminCost);
 
+}
+
+function populateTotalBuildCost(parentDom,totalCostToBuild){
+    var totalBuildCostLabel = document.createElement('label');
+    totalBuildCostLabel.textContent = `Total Building Cost: $${totalCostToBuild}`;
+    parentDom.appendChild(totalBuildCostLabel);
 }
 
 function populateProfitTable(parentDom){
@@ -538,6 +550,29 @@ function populateRevenuesTable(parentDom,revenues){
     revenuesTable.appendChild(sumRow);
     parentDom.appendChild(revenuesTable);
 
+}
+
+function determineTotalBuildCost(){
+    var totalBuildingCost = 0;
+    map.forEach((buildingSpot, i) => {
+        var buildingData = buildingsJson.find(blding => blding.name == buildingSpot.name);
+        if(!buildingData){
+            new Error(`Can't find building in building data from server.`)
+            return
+        }
+        if(buildingSpot.level == 1){
+            var buildingCostToBuild = buildingData.cost
+        }else{
+            var buildingCostToBuild = 0;
+            for(level = 2; level <= buildingSpot.level+1; level++){
+                buildingCostToBuild += buildingData.cost*(level-1);
+            }
+        }
+
+        totalBuildingCost += buildingCostToBuild;
+    });
+    console.log(`total building cost ${totalBuildingCost}`);
+    return totalBuildingCost
 }
 
 function populateExpensesTable(parentDom,ingredientExpenses,totalWorkerCost, totalAdminCost){
