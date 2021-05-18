@@ -312,10 +312,12 @@ function populateProfitTable(parentDom){
     console.log('uniqueProduced');
     console.log(uniqueProducedGlobal);
     adminPercent = Number(document.getElementById('adminInput').value);
+    var exchange = document.getElementById('sellToExchange');
 
     var tableData = [];
     var headings = [`Product`,
                     `Source Cost`,
+                    'Selling Costs',
                     `Profit Per Unit`,
                     `Profit Per Hour`,
                     `Profit Per Day`];
@@ -326,6 +328,7 @@ function populateProfitTable(parentDom){
         var profitPerUnit =0;
         //Adding Transport Cost
         var transportCost =0;
+        var totalSellingCost = 0;
         productionData = uniqueProducedGlobal.find(product =>
                                             product.producing.name == soldItem.name)
 
@@ -339,8 +342,19 @@ function populateProfitTable(parentDom){
 
         profitPerUnit = Number(soldItem.price) - totalCostToMake;
         totalProfitPerHour += profitPerUnit*soldItem.amount;
+
+        transportCost = getTransportCost(soldItem);
+        if(!exchange.checked){
+            totalSellingCost = transportCost;
+        }
+        else{
+            totalSellingCost = soldItem.price*0.03 + transportCost;
+        }
+
+
         var rowData =  [`${soldItem.name}`,
                         totalCostToMake.toFixed(3),
+                        totalSellingCost.toFixed(3),
                         profitPerUnit.toFixed(3),
                         (profitPerUnit*soldItem.amount).toFixed(2),
                         (profitPerUnit*soldItem.amount*24).toFixed(2)];
@@ -351,11 +365,42 @@ function populateProfitTable(parentDom){
         `Total`,
         '',
         '',
+        '',
         totalProfitPerHour.toFixed(2),
         (totalProfitPerHour*24).toFixed(2)
     ]
     tableData.push(sumRow);
     createTable(parentDom,tableData);
+}
+
+function getTransportCost(item){
+    var adminPercent = Number(document.getElementById('adminInput').value);
+    var contract = document.getElementById('sellToContract')
+    var producingTransportation = uniqueProducedGlobal.find(
+        product => product.producing.name == 'Transport'
+    )
+    var transportationUnitCost = 0;
+    var transportationPerItem = 0;
+
+    if(producingTransportation){
+        var totalIngCost = getTotalIngredientCost(producingTransportation.producing.ingredients);
+        transportationUnitCost = totalIngCost + getUnitLaborCost(producingTransportation,adminPercent);
+    }
+    else{
+        var buyTrans = toBuyGlobal.find(buying => buying.name == 'Transport');
+        if(!buyTrans){
+            console.log('No Purchase Price for ');
+            transportationUnitCost=0
+        }
+        transportationUnitCost = buyTrans.price;
+    }
+    if(contract.checked){
+        transportationPerItem = item.transportation /2;
+    }
+    else{
+        transportationPerItem = item.transportation;
+    }
+    return transportationPerItem * transportationUnitCost
 }
 
 function createTable(parentDom, tableData){
@@ -649,10 +694,9 @@ function addPriceToBuySell(){
 
 function populateNetProducts(parentDom,uniqueProduced,uniqueIngredients){
 
-    const [toBuy, toSell] = determineBuyandSell(uniqueProduced,uniqueIngredients);
+    [toBuy, toSell] = determineBuyandSell(uniqueProduced,uniqueIngredients);
     populateToSellTable(parentDom,toSell);
     populateToBuyTable(parentDom,toBuy);
-    determineTransportRequired(toBuy,toSell);
 
     return [toBuy, toSell]
 }
@@ -768,13 +812,13 @@ function populateToSellTable(parentDom, toSell){
 }
 
 function determineBuyandSell(uniqueProduced,uniqueIngredients){
-    toSell = [];
-    toBuy = [];
+    var toSell = [];
+    var toBuy = [];
     console.log(uniqueIngredients);
     uniqueIngredients.forEach((ingredient) => {
         console.log(ingredient);
-        buy = {};
-        sell = {};
+        var buy = {};
+        var sell = {};
         productThatisIngredient = uniqueProduced.find(product =>
             ingredient.db_letter == product.producing.db_letter);
         if(productThatisIngredient){
@@ -810,9 +854,9 @@ function determineBuyandSell(uniqueProduced,uniqueIngredients){
         }
     });
     uniqueProduced.forEach((product) => {
-        alreadyIntoSell = toSell.find( sell =>
+        var alreadyIntoSell = toSell.find( sell =>
                     product.producing.db_letter == sell.db_letter)
-        alreadyIntoBuy = toBuy.find( buy =>
+        var alreadyIntoBuy = toBuy.find( buy =>
                     product.producing.db_letter == buy.db_letter)
         if(!alreadyIntoSell && !alreadyIntoBuy){
             sell = {
@@ -831,8 +875,8 @@ function determineBuyandSell(uniqueProduced,uniqueIngredients){
 }
 
 function determineTransportRequired(toBuy, toSell){
-    buy = {};
-    transNeeded = 0;
+    var buy = {};
+    var transNeeded = 0;
     toSell.forEach((product, i) => {
         transNeeded += product.amount * product.transportation;
     });
@@ -848,15 +892,27 @@ function determineTransportRequired(toBuy, toSell){
                 name:producedTransport.name,
                 db_letter:producedTransport.db_letter,
                 amount: Math.abs(netTrans),
+                transportation:producedTransport.transportation,
             }
             toBuy.push(buy);
-            transportationIndex = toSell.findIndex(itemtoSell =>
+            var transportationIndex = toSell.findIndex(itemtoSell =>
                             itemtoSell.db_letter == producedTransport.db_letter)
             toSell.splice(transportationIndex,1);
         }
         else{
             producedTransport.amount = netTrans
         }
+    }
+    else{
+        var transportData = resourceJson.find(resource => resource.name == 'Transport');
+
+        buy = {
+            name:'Transport',
+            db_letter:transportData.db_letter ? transportData.db_letter:13,
+            amount: transNeeded,
+            transportation:transportData.transportation ? transportData.transportation:0,
+        }
+        toBuy.push(buy)
     }
     return [toBuy,toSell]
 }

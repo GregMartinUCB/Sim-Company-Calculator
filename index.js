@@ -71,7 +71,7 @@ Routes
 *********************************/
 
 app.get("/", (req, res) => {
-    res.render('calc');
+    res.render('simulator');
 });
 
 app.get('/buildings', (req, res) =>{
@@ -141,8 +141,8 @@ app.get('/VIHI', (req, res) =>{
     res.render('VIHI');
 })
 
-app.get('/simulator', (req,res) =>{
-    res.render('simulator');
+app.get('/profitCalc', (req,res) =>{
+    res.render('calc');
 })
 
 app.use(function(req, res, next) {
