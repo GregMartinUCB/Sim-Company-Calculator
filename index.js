@@ -19,7 +19,7 @@ app.use(express.json({
 app.set('view engine', 'ejs');
 
 //URLs
-const resourceBaseURL = `https://www.simcompanies.com/api/v3/en/encyclopedia/resources/0/`;
+const resourceBaseURL = `https://www.simcompanies.com/api/v3/en/encyclopedia/resources/1/`;
 const imagesAPIURL = `https://d1fxy698ilbz6u.cloudfront.net/static/`;
 const buildingsAPIURL = `https://www.simcompanies.com/api/v2/encyclopedia/buildings/`;
 

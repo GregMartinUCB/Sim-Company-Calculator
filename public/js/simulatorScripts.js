@@ -13,7 +13,6 @@ const abundanceBuildings = ['M','Q','O'];
 async function getResources(){
     const resourceResponse = await fetch('/resources');
     resourceJson = await resourceResponse.json();
-    console.log(resourceJson);
     // let resourceSelection = document.getElementById('productSelect');
     // resourceJson.forEach((resource) => {
     //     let opt = document.createElement("option");
@@ -26,7 +25,6 @@ async function getResources(){
 async function getBuildings(){
     const buildingsResponse = await fetch('/buildings');
     buildingsJson = await buildingsResponse.json();
-    console.log(buildingsJson);
 }
 
 function delChildren(domElement){
@@ -288,8 +286,7 @@ function createRightPanel(){
     revenues = determineRevenues();
     ingredientExpenses = determineIngredientExpenses();
     [totalWorkerCost, totalAdminCost] = determineTotalLaborCost();
-    totalRevenue = determineTotalRevenue(revenues);
-    totalExpense = determineTotalExpenses(ingredientExpenses,totalWorkerCost, totalAdminCost);
+
 
     totalProfitLabel = document.createElement('h3');
     totalProfitLabel.textContent=`Total Profit: `;
@@ -309,8 +306,7 @@ function createRightPanel(){
 }
 
 function populateProfitTable(parentDom){
-    console.log('uniqueProduced');
-    console.log(uniqueProducedGlobal);
+
     adminPercent = Number(document.getElementById('adminInput').value);
     var exchange = document.getElementById('sellToExchange');
 
@@ -333,24 +329,25 @@ function populateProfitTable(parentDom){
                                             product.producing.name == soldItem.name)
 
         if(productionData.producing.ingredients.length){
+            console.log(productionData.producing);
             totalIngCost = getTotalIngredientCost(productionData.producing.ingredients);
             totalCostToMake = totalIngCost + getUnitLaborCost(productionData,adminPercent);
         }
         else{
             totalCostToMake = getUnitLaborCost(productionData,adminPercent);
         }
-
-        profitPerUnit = Number(soldItem.price) - totalCostToMake;
-        totalProfitPerHour += profitPerUnit*soldItem.amount;
-
+        console.log(toSellGlobal);
         transportCost = getTransportCost(soldItem);
         if(!exchange.checked){
+            console.log('in Contract');
             totalSellingCost = transportCost;
         }
         else{
             totalSellingCost = soldItem.price*0.03 + transportCost;
         }
 
+        profitPerUnit = Number(soldItem.price) - totalCostToMake-totalSellingCost;
+        totalProfitPerHour += profitPerUnit*soldItem.amount;
 
         var rowData =  [`${soldItem.name}`,
                         totalCostToMake.toFixed(3),
@@ -373,7 +370,7 @@ function populateProfitTable(parentDom){
     createTable(parentDom,tableData);
 }
 
-function getTransportCost(item){
+function getTransportCost(itemToSell){
     var adminPercent = Number(document.getElementById('adminInput').value);
     var contract = document.getElementById('sellToContract')
     var producingTransportation = uniqueProducedGlobal.find(
@@ -383,6 +380,7 @@ function getTransportCost(item){
     var transportationPerItem = 0;
 
     if(producingTransportation){
+        console.log('Should not be here 382');
         var totalIngCost = getTotalIngredientCost(producingTransportation.producing.ingredients);
         transportationUnitCost = totalIngCost + getUnitLaborCost(producingTransportation,adminPercent);
     }
@@ -395,11 +393,15 @@ function getTransportCost(item){
         transportationUnitCost = buyTrans.price;
     }
     if(contract.checked){
-        transportationPerItem = item.transportation /2;
+        transportationPerItem = itemToSell.transportation /2;
+        console.log(`Trans unit cost:${transportationUnitCost}`);
+        console.log(itemToSell);
     }
     else{
-        transportationPerItem = item.transportation;
+        transportationPerItem = itemToSell.transportation;
     }
+    console.log(`Trans per item:${transportationPerItem}`);
+
     return transportationPerItem * transportationUnitCost
 }
 
@@ -431,7 +433,7 @@ function getUnitLaborCost(productionData, adminPercent){
     unitWorkerCost = (productionData.producing.baseSalary*productionData.level)/
                                         productionData.producedPerHour;
     unitLaborCost = unitWorkerCost * (1+adminPercent/100);
-    console.log(`Labor Cost:${unitLaborCost}`);
+
     return unitLaborCost
 }
 
@@ -448,7 +450,10 @@ function getTotalIngredientCost (ingredients){
             const ingFromBuyListData = toBuyGlobal.find(globalBuy=>
                                                 ing.resource.name == globalBuy.name)
             totalingCost += ingFromBuyListData.price * ing.amount;
-            console.log(totalingCost);
+
+            console.log(ing.resource.name);
+            console.log(`Sourcing Cost: ${totalingCost}`);
+
         }
         //Case where the ingredient does not have ingredients
         //All cost comes from labor
@@ -459,6 +464,7 @@ function getTotalIngredientCost (ingredients){
         //Cost comes from either producing 100% of our demand.
         //or a mix of buying and our own production line costs.
         else{
+            console.log(ing.resource.name);
             var totalProduced = makingItOurself.producedPerHour;
             var consumedIngredient = uniqueIngredientsGlobal.find(ingredient =>
                                         ingredient.name == makingItOurself.producing.name);
@@ -468,26 +474,29 @@ function getTotalIngredientCost (ingredients){
             var percentBought = (totalConsumed-totalProduced)/totalConsumed;
             var laborCost = getUnitLaborCost(makingItOurself,adminPercent);
             var sourcingCost = getTotalIngredientCost(makingItOurself.producing.ingredients)
-
-            console.log(makingItOurself);
-
+            sourcingCost = sourcingCost * ing.amount;
+            laborCost = laborCost * ing.amount;
+            console.log(`Sourcing Cost: ${sourcingCost}`);
+            console.log(`Labor Cost:${laborCost}`);
             if(percentBought >= 0){
+                console.log(percentBought);
+
                 //case where we need to buy some to suppliment our consumption
                 const ingFromBuyListData = toBuyGlobal.find(globalBuy=>
                                                     ing.resource.name == globalBuy.name)
                 totalingCost += percentBought*(ingFromBuyListData.price*ing.amount)+
                         (1-percentBought)*sourcingCost;
+
                 totalingCost += laborCost;
             }
             //case where we are making more than we consume.
             //All cost comes from our production.
             if(percentBought < 0){
+                console.log(percentBought);
                 totalingCost += sourcingCost + laborCost;
             }
-            console.log(totalingCost);
         }
     });
-
     return totalingCost
 }
 
@@ -507,7 +516,7 @@ function populateRevenuesTable(parentDom,revenues){
     tableHead.appendChild(perDayCol);
     revenuesTable.appendChild(tableHead);
 
-    totalRevenue = 0;
+    var totalRevenue = 0;
     revenues.forEach((revSource, i) => {
         row = document.createElement('tr');
         prodNameDom =  document.createElement('td');
@@ -626,8 +635,6 @@ function determineRevenues(){
         }
         revenues.push(revenue);
     });
-    console.log('Revenues:');
-    console.log(revenues);
     return revenues
 }
 
@@ -642,39 +649,19 @@ function determineIngredientExpenses(){
         }
         ingredientExpenses.push(ingredientExpense);
     });
-    console.log('Ingredient Expenses:');
-    console.log(ingredientExpenses);
     return ingredientExpenses
 }
 
 function determineTotalLaborCost(){
-    console.log(uniqueProducedGlobal);
-    totalWorkerCost = 0;
+    var totalWorkerCost = 0;
     uniqueProducedGlobal.forEach((product, i) => {
-        workerCost = product.producing.baseSalary * product.level;
+        var workerCost = product.producing.baseSalary * product.level;
         totalWorkerCost += workerCost;
     });
-    adminPercent = Number(document.getElementById('adminInput').value);
-    adminCost = totalWorkerCost * adminPercent/100;
+    var adminPercent = Number(document.getElementById('adminInput').value);
+    var adminCost = totalWorkerCost * adminPercent/100;
 
     return [totalWorkerCost, adminCost]
-}
-
-function determineTotalRevenue(revenues){
-    totalRevenue = 0;
-    revenues.forEach((rev, i) => {
-        totalRevenue += rev.revenue;
-    });
-    return totalRevenue
-}
-
-function determineTotalExpenses(ingredientExpenses,totalWorkerCost, totalAdminCost){
-    totalExpense = 0;
-    ingredientExpenses.forEach((ing, i) => {
-        totalExpense += ing.expense;
-    });
-    totalExpense += totalWorkerCost + totalAdminCost;
-    return totalExpense
 }
 
 function addPriceToBuySell(){
@@ -683,13 +670,10 @@ function addPriceToBuySell(){
     toSellGlobal.forEach((sellable, i) => {
         sellable.price = Number(sellPrices[i].value);
     });
-    console.log('To Sell:');
-    console.log(toSellGlobal);
+
     toBuyGlobal.forEach((ingredient, i) => {
         ingredient.price = Number(buyPrices[i].value);
     });
-    console.log('To Buy:');
-    console.log(toBuyGlobal);
 }
 
 function populateNetProducts(parentDom,uniqueProduced,uniqueIngredients){
@@ -814,12 +798,11 @@ function populateToSellTable(parentDom, toSell){
 function determineBuyandSell(uniqueProduced,uniqueIngredients){
     var toSell = [];
     var toBuy = [];
-    console.log(uniqueIngredients);
     uniqueIngredients.forEach((ingredient) => {
-        console.log(ingredient);
+        console.log(JSON.parse(JSON.stringify(ingredient)));
         var buy = {};
         var sell = {};
-        productThatisIngredient = uniqueProduced.find(product =>
+        const productThatisIngredient = uniqueProduced.find(product =>
             ingredient.db_letter == product.producing.db_letter);
         if(productThatisIngredient){
             net = productThatisIngredient.producedPerHour - ingredient.amountPerHour;
@@ -1085,9 +1068,8 @@ function reduceProducedList(){
 
 function reducedIngredientList(uniqueProduced){
     ingredients = [];
-    console.log(uniqueProduced);
     uniqueProduced.forEach((product, i) => {
-
+        console.log(product);
         if(product.producing.ingredients.length){
             product.producing.ingredients.forEach((ing) => {
                 dupIngredient = ingredients.find(ingred => ing.resource.db_letter ==
@@ -1100,7 +1082,7 @@ function reducedIngredientList(uniqueProduced){
                         name : ing.resource.name,
                         db_letter : ing.resource.db_letter,
                         amountPerHour : product.producedPerHour*ing.amount,
-                        transportation: product.producing.transportation
+                        transportation: ing.resource.transportation
                     };
                     ingredients.push(tempIng);
 
