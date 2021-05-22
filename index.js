@@ -119,12 +119,12 @@ app.get('/resources', (request, response) => {
             databasetoUse = resourceDatabase;
 
     }
+    databasetoUse.loadDatabase();
     databasetoUse.find({}, (err, data) => {
         if (err) {
             response.end();
             return;
         }
-
         let dataForClient = [];
         data.forEach((item) => {
             //console.log(item);
@@ -151,6 +151,7 @@ app.get('/resources', (request, response) => {
         dataForClient = sortResourcesAlphabetically(dataForClient);
         response.json(dataForClient);
     });
+    databasetoUse.persistence.compactDatafile();
 });
 
 /*

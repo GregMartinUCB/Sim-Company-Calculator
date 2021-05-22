@@ -374,3 +374,11 @@
 {"id":14485168,"kind":1,"quantity":461220,"quality":6,"price":0.247,"seller":{"id":438048,"company":"VASCO Corp.","logo":"https://d1fxy698ilbz6u.cloudfront.net/logo/19b5bb78f40097e451bb9c0b1fc6d4cfb2c77702.png","certificates":1,"contest_wins":0,"npc":false,"courseId":null,"ip":"57140d"},"posted":"2021-05-22T09:54:24.761146+00:00","fees":3419,"_id":"zrfPI3tEredditsb"}
 {"id":14475972,"kind":1,"quantity":23761291,"quality":6,"price":0.248,"seller":{"id":8663,"company":"The 11 Gods","logo":"https://d1fxy698ilbz6u.cloudfront.net/logo/9d6e0dc0cb308e50e7e012bc0968ee7587725fe6.png","certificates":3,"contest_wins":0,"npc":false,"courseId":null,"ip":"c0ddae"},"posted":"2021-05-22T02:59:05.678697+00:00","fees":100286,"_id":"zutXwieAGFfM3nHy"}
 {"$$indexCreated":{"fieldName":"id","unique":true,"sparse":false}}
+{"$$indexCreated":{"fieldName":"id","unique":true,"expireAfterSeconds":1814400}}
+{"$$indexCreated":{"fieldName":"id","unique":true,"expireAfterSeconds":1814400}}
+{"$$indexCreated":{"fieldName":"id","unique":true,"expireAfterSeconds":1814400}}
+{"$$indexCreated":{"fieldName":"id","unique":true,"expireAfterSeconds":1814400}}
+{"$$indexCreated":{"fieldName":"id","unique":true,"expireAfterSeconds":1814400}}
+{"$$indexCreated":{"fieldName":"id","unique":true,"expireAfterSeconds":1814400}}
+{"$$indexCreated":{"fieldName":"id","unique":true,"expireAfterSeconds":1814400}}
+{"$$indexCreated":{"fieldName":"id","unique":true,"expireAfterSeconds":1814400}}
