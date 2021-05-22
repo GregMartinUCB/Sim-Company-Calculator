@@ -76,7 +76,7 @@ function setup() {
     //getAllBuildings()
     //cleanResourceDatabase();
 
-    updateAllResourceMarketData();
+    //updateAllResourceMarketData();
 
 }
 
