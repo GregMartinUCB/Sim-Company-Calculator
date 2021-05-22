@@ -19,14 +19,17 @@ app.use(express.json({
 app.set('view engine', 'ejs');
 
 //URLs
-const resourceBaseURL = `https://www.simcompanies.com/api/v3/en/encyclopedia/resources/1/`;
+const resourceBaseURL = `https://www.simcompanies.com/api/v3/en/encyclopedia/resources/`;
+const economyState = 0;
 const imagesAPIURL = `https://d1fxy698ilbz6u.cloudfront.net/static/`;
 const buildingsAPIURL = `https://www.simcompanies.com/api/v2/encyclopedia/buildings/`;
 
 //Database inits
 const resourceDatabase = new DataStore('resourceDatabase.db');
+const resourceDatabaseRecession = new DataStore('resourceDatabaseRecession.db');
+const resourceDatabaseBoom = new DataStore('resourceDatabaseBoom.db');
 const marketData = new DataStore('marketDatabase.db');
-marketData.ensureIndex({fieldName: "id",unique:true});
+marketData.ensureIndex({fieldName: "id",unique:true, expireAfterSeconds: 1814400});
 marketData.persistence.compactDatafile();
 const buildingData = new DataStore('buildingData.db');
 buildingData.persistence.compactDatafile();
@@ -39,8 +42,19 @@ buildingData.persistence.compactDatafile();
     is a gap in there where some resource numbers do not have a page.*/
 
 const cleanResourceDatabase = () => {
-    resourceDatabase.loadDatabase();
-    resourceDatabase.remove({
+    var databasetoUse = null;
+    switch (economyState) {
+        case 0:
+            databasetoUse = resourceDatabaseRecession;
+            break;
+        case 1:
+            databasetoUse = resourceDatabase;
+            break;
+        case 2:
+            databasetoUse = resourceDatabaseBoom;
+    }
+    databasetoUse.loadDatabase();
+    databasetoUse.remove({
             message: "Could not find such resource"
         }, {
             multi: true
@@ -48,7 +62,7 @@ const cleanResourceDatabase = () => {
         function(err, numRemoved) {
             console.log(`Removed ${numRemoved} erroneous entries.`);
         });
-    resourceDatabase.persistence.compactDatafile();
+    databasetoUse.persistence.compactDatafile();
 }
 
 /********************************
@@ -56,11 +70,14 @@ Setup
 *********************************/
 
 function setup() {
-
+    //Functions that are run manually to update databases. Not needed to run
+    //again unless game changes.
     //refreshEncycData();
-    //updateAllResourceMarketData();
     //getAllBuildings()
-    cleanResourceDatabase();
+    //cleanResourceDatabase();
+
+    updateAllResourceMarketData();
+
 }
 
 setup();
@@ -87,7 +104,22 @@ app.get('/buildings', (req, res) =>{
 })
 
 app.get('/resources', (request, response) => {
-    resourceDatabase.find({}, (err, data) => {
+    var databasetoUse = null;
+    switch (economyState) {
+        case 0:
+            databasetoUse = resourceDatabaseRecession;
+            break;
+        case 1:
+            databasetoUse = resourceDatabase;
+            break;
+        case 2:
+            databasetoUse = resourceDatabaseBoom;
+            break;
+        default:
+            databasetoUse = resourceDatabase;
+
+    }
+    databasetoUse.find({}, (err, data) => {
         if (err) {
             response.end();
             return;
@@ -196,16 +228,29 @@ function refreshEncycData() {
 }
 
 const getEncyclopediaData = async (resourceNumber) => {
-    const encycResponse = await fetch(resourceBaseURL + resourceNumber.toString());
+    const encycResponse = await fetch(resourceBaseURL+ `${economyState}/` +
+                                                    resourceNumber.toString());
     const encycJson = await encycResponse.json();
+
+    var databasetoUse = null;
+    switch (economyState) {
+        case 0:
+            databasetoUse = resourceDatabaseRecession;
+            break;
+        case 1:
+            databasetoUse = resourceDatabase;
+            break;
+        case 2:
+            databasetoUse = resourceDatabaseBoom;
+    }
 
     //downloading image and saving as a file. Gives path to add to database.
     const resourcePNGPath = await downloadReasourcePNG(encycJson.image, encycJson.name);
     try {
         const resourceName = await encycJson.name;
         console.log(resourceName);
-        resourceDatabase.loadDatabase();
-        resourceDatabase.update({
+        databasetoUse.loadDatabase();
+        databasetoUse.update({
                 name: resourceName
             },
             encycJson, {
@@ -213,7 +258,7 @@ const getEncyclopediaData = async (resourceNumber) => {
             }, (err, num) => {
 
             });
-        resourceDatabase.persistence.compactDatafile();
+        databasetoUse.persistence.compactDatafile();
     } catch (err) {
         console.log(err);
     }
@@ -232,33 +277,49 @@ const downloadReasourcePNG = async (partialImageURL, name) => {
     return `./public/images/${name}.png`
 }
 
-async function updateMarketData(resource){
+async function updateMarketData(resourceNumber){
     //tickerAPIURL = `https://www.simcompanies.com/api/v1/market-ticker/${date.toISOString()}`
     //console.log(tickerAPIURL);
     exchangeResourceAPIURLBase = 'https://www.simcompanies.com/api/v2/market/'
-    const testExchangeResponse = await fetch(exchangeResourceAPIURLBase + resource);
+    const testExchangeResponse = await fetch(exchangeResourceAPIURLBase + resourceNumber);
     const testExchangeJson = await testExchangeResponse.json();
     console.log(testExchangeJson);
     if(testExchangeJson == null){
         return
     }else {
-        marketData.loadDatabase();
-        marketData.insert(testExchangeJson);
-        marketData.persistence.compactDatafile();
-    }
+        testExchangeJson.forEach((exchangeEntry, i) => {
+            var dataToInsert = JSON.parse(JSON.stringify(exchangeEntry));
+            marketData.insert(dataToInsert,function(err){
+                //if(err){console.log(err);}
+            });
+        });
 
+    }
 }
 
+//Working on this fuction to store market data.
 function updateAllResourceMarketData(){
-    marketIntervalCounter = 1;
-    const marketDataInterval = setInterval(() => {
-        updateMarketData(1);
-        marketIntervalCounter += 1;
-        if(marketIntervalCounter > 115){
-            marketIntervalCounter = 1;
+    marketData.loadDatabase();
+    var marketIntervalCounter = 0;
+    var resourceList = null;
+    resourceList = resourceDatabase.find({}, (err, resources) => {
+        if (err) {
+            console.log(err);
+            response.end();
+            return;
         }
-
-    },20000)
+        console.log(resources);
+        return resources
+    })
+    const marketDataInterval = setInterval(() => {
+        console.log(resourceList[marketIntervalCounter]);
+        updateMarketData(resourceList[marketIntervalCounter].db_letter);
+        marketIntervalCounter += 1;
+        if(marketIntervalCounter >= resourceList.length){
+            marketIntervalCounter = 0;
+        }
+    },10000)
+    marketData.persistence.compactDatafile();
 }
 
 const getBuildingData = async (buildingLetter) => {
