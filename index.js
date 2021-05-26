@@ -73,7 +73,7 @@ function setup() {
     //Functions that are run manually to update databases. Not needed to run
     //again unless game changes.
     //refreshEncycData();
-    //getAllBuildings()
+    getAllBuildings()
     //cleanResourceDatabase();
 
     //updateAllResourceMarketData();
@@ -102,6 +102,7 @@ app.get('/buildings', (req, res) =>{
         res.json(data);
     })
 })
+
 
 app.get('/resources', (request, response) => {
     var databasetoUse = null;
@@ -178,6 +179,13 @@ app.get('/profitCalc', (req,res) =>{
     res.render('calc');
 })
 
+app.get('/market',async (req, res) =>{
+    const exchangeData = await getResourceExhangeData(2)
+    await console.log('Right before');
+    const splitDataResponse = await splitExchangeDataByQuality(exchangeData);
+
+})
+
 app.use(function(req, res, next) {
     res.status(404).render('404');
 });
@@ -185,6 +193,26 @@ app.use(function(req, res, next) {
 /********************************
 Custom functions for handling data
 *********************************/
+function extractLowestExchangePost(){
+
+}
+
+async function splitExchangeDataByQuality(exchangeData){
+    const qualities = [...new Set(exchangeData.map(item => item.quality))];
+}
+
+async function getResourceExhangeData(resource){
+    marketData.loadDatabase();
+    var resourceExchangeData = await marketData.find({kind:resource}, function(err, data){
+        if(err){reject(err)}
+        console.log(true);
+        return data
+    })
+    await marketData.persistence.compactDatafile();
+    console.log(resourceExchangeData);
+    return resourceExchangeData
+
+}
 
 function sortResourcesAlphabetically(jsonArrayOfResources) {
     jsonArrayOfResources.sort((a, b) => {
@@ -278,48 +306,42 @@ const downloadReasourcePNG = async (partialImageURL, name) => {
     return `./public/images/${name}.png`
 }
 
+//Grabs the posts on the exchange for that resource indicated by a numbers
+//number corresponds to db_letter in api.
 async function updateMarketData(resourceNumber){
-    //tickerAPIURL = `https://www.simcompanies.com/api/v1/market-ticker/${date.toISOString()}`
-    //console.log(tickerAPIURL);
     exchangeResourceAPIURLBase = 'https://www.simcompanies.com/api/v2/market/'
     const testExchangeResponse = await fetch(exchangeResourceAPIURLBase + resourceNumber);
     const testExchangeJson = await testExchangeResponse.json();
-    console.log(testExchangeJson);
     if(testExchangeJson == null){
         return
     }else {
         testExchangeJson.forEach((exchangeEntry, i) => {
             var dataToInsert = JSON.parse(JSON.stringify(exchangeEntry));
             marketData.insert(dataToInsert,function(err){
-                //if(err){console.log(err);}
+                if(err){console.log('Duplicate Entry');}
             });
         });
-
+        console.log(`Resource ${resourceNumber} market data updated.`);
     }
 }
 
 //Working on this fuction to store market data.
 function updateAllResourceMarketData(){
     marketData.loadDatabase();
+    resourceDatabase.loadDatabase();
     var marketIntervalCounter = 0;
-    var resourceList = null;
-    resourceList = resourceDatabase.find({}, (err, resources) => {
-        if (err) {
-            console.log(err);
-            response.end();
-            return;
-        }
-        console.log(resources);
-        return resources
+    getResourceData()
+    .then((resourceList)=>{
+        resourceDatabase.persistence.compactDatafile();
+        const marketDataInterval = setInterval(() => {
+            updateMarketData(resourceList[marketIntervalCounter].db_letter);
+            marketIntervalCounter += 1;
+            if(marketIntervalCounter >= resourceList.length){
+                marketIntervalCounter = 0;
+            }
+        },10000)
     })
-    const marketDataInterval = setInterval(() => {
-        console.log(resourceList[marketIntervalCounter]);
-        updateMarketData(resourceList[marketIntervalCounter].db_letter);
-        marketIntervalCounter += 1;
-        if(marketIntervalCounter >= resourceList.length){
-            marketIntervalCounter = 0;
-        }
-    },10000)
+    .catch((err)=> console.error(err));
     marketData.persistence.compactDatafile();
 }
 
@@ -335,7 +357,7 @@ const getBuildingData = async (buildingLetter) => {
 }
 
 function getAllBuildings(){
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890";
     letterCount = 0;
     const buildingInterval = setInterval(()=>{
         try{

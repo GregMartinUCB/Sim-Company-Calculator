@@ -106,7 +106,7 @@ function createBuildingDiv(parentDom, slotNumber){
 }
 
 function updateBuilding(slotNumber){
-     build = document.getElementById(`building${slotNumber}Div`);
+     var build = document.getElementById(`building${slotNumber}Div`);
      buildingSelector = document.getElementById(`building${slotNumber}select`)
      if(document.getElementById(`building${slotNumber}product`)){
          document.getElementById(`building${slotNumber}product`).remove();
@@ -207,7 +207,7 @@ function submitBuildings(){
         else{
             level = Number(levelDoms[i].value);
         }
-        build = createBuildSlotObject(buildingJSON,abundance,productJSON,level);
+        var build = createBuildSlotObject(buildingJSON,abundance,productJSON,level);
         map.push(build);
     });
     createCenterPanel();
@@ -215,7 +215,7 @@ function submitBuildings(){
 
 function createBuildSlotObject(buildJSON,abundance,product,level){
 
-    building = {};
+    var building = {};
     building.level = level;
     building.producing = product;
     building.name = buildJSON.name;
