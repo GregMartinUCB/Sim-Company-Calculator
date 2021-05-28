@@ -73,7 +73,7 @@ function setup() {
     //Functions that are run manually to update databases. Not needed to run
     //again unless game changes.
     //refreshEncycData();
-    getAllBuildings()
+    //getAllBuildings()
     //cleanResourceDatabase();
 
     //updateAllResourceMarketData();
