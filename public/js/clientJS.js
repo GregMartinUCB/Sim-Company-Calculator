@@ -163,7 +163,7 @@ function setUpCalcButton(){
 
         let unitsPerHour = productData.producedPerHour * (1+(tempProduction/100));
         let workerCost = tempBaseSalary/unitsPerHour;
-        let laborCost = workerCost * (1-tempAdminCost/100);
+        let laborCost = workerCost * (1+tempAdminCost/100);
         let profitPerUnit;
 
         console.log(totalIngCost+laborCost);
