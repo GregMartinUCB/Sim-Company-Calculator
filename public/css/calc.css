@@ -73,8 +73,10 @@ input, select {
     border-radius: 2px;
     height: 25px;
     width: 100%;
+    max-width: 300px;
+    min-width: 50px
     font-size: 15px;
-    padding: 0 16px;
+    padding: 0 2px;
 
     &:focus {
         background-color: #fff;

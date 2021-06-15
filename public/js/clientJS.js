@@ -85,20 +85,25 @@ function addIngredientDiv(parentDOM, prodData ){
 }
 
 
-document.getElementById("submitName").onclick = async function() {
-    /*
-    Currently disabled getting user information to avoid spamming sim companies
-    servers.
-    */
-    //await getPlayerData(document.getElementById("playerName").value);
-    //adminOverheadDisplayed = parseFloat((playerData.adminOverhead - 1) * 100).toFixed(3);
-    //document.getElementById("adminOverhead").value = adminOverheadDisplayed;
-    //document.getElementById("productionSpeed").value = playerData.productionModifier;
-
-}
+// document.getElementById("submitName").onclick = async function() {
+//     /*
+//     Currently disabled getting user information to avoid spamming sim companies
+//     servers.
+//     */
+//     //await getPlayerData(document.getElementById("playerName").value);
+//     //adminOverheadDisplayed = parseFloat((playerData.adminOverhead - 1) * 100).toFixed(3);
+//     //document.getElementById("adminOverhead").value = adminOverheadDisplayed;
+//     //document.getElementById("productionSpeed").value = playerData.productionModifier;
+//
+// }
 
 document.getElementById("selectProduct").onclick = function() {
     sel = document.getElementById('productSelect');
+    inputForm = document.getElementById('infoFromUser');
+    inputForm.hidden = false;
+    ingredientsDiv = document.getElementById('ingredientsDiv');
+    ingredientsDiv.hidden = false;
+
     productData = {
         productID : 0,
         ingredients : [],
@@ -151,6 +156,7 @@ function setUpCalcButton(){
         let tempAdminCost = document.getElementById('adminOverhead').value;
         let tempBaseSalary = productData.baseSalary;
         let tempTransportNeeded = productData.transportNeeded;
+        let robotBoolean = document.getElementById('robots').checked;
         let totalIngCost = 0;
 
         ingData.forEach((ing, i) => {
@@ -162,7 +168,13 @@ function setUpCalcButton(){
         tempBuildingLevel = document.getElementById('buildingLevel').value;
 
         let unitsPerHour = productData.producedPerHour * (1+(tempProduction/100));
-        let workerCost = tempBaseSalary/unitsPerHour;
+        if(robotBoolean){
+            var workerCost = tempBaseSalary*0.97/unitsPerHour;
+        }
+        else {
+            var workerCost = tempBaseSalary/unitsPerHour;
+        }
+        console.log(`Worker Cost: ${workerCost}`);
         let laborCost = workerCost * (1+tempAdminCost/100);
         let profitPerUnit;
 
@@ -170,15 +182,15 @@ function setUpCalcButton(){
 
         if(sellWhere[0].checked){
             profitPerUnit = tempSellPrice - (tempTransportNeeded*tempTransCost/2) -
-                totalIngCost;
+                totalIngCost - laborCost;
         }
         else if (sellWhere[1].checked){
             profitPerUnit = tempSellPrice * 0.97 - (tempTransportNeeded*tempTransCost) -
-                totalIngCost;
+                totalIngCost - laborCost;
         }
         else{
             profitPerUnit = tempSellPrice * 0.97 - (tempTransportNeeded*tempTransCost) -
-                totalIngCost;
+                totalIngCost - laborCost;
         }
 
         let profitPerHour = profitPerUnit * unitsPerHour*tempBuildingLevel;

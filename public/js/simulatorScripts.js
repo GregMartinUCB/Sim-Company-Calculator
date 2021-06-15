@@ -70,13 +70,13 @@ function addBuildingSlots(){
 
 function createBuildingDiv(parentDom, slotNumber){
     if (!parentDom){console.log('Missing Inputs'); return}
-    buildingDiv = document.createElement('div');
+    const buildingDiv = document.createElement('div');
     buildingDiv.id = `building${slotNumber}Div`
     buildingDiv.name = "buildingDiv";
-    selectorBuildingLabel = document.createElement('label');
+    const selectorBuildingLabel = document.createElement('label');
     selectorBuildingLabel.for = `building${slotNumber}`;
     selectorBuildingLabel.textContent = `Select Building:`;
-    selectorBuilding = document.createElement('select');
+    const selectorBuilding = document.createElement('select');
     selectorBuilding.id = `building${slotNumber}select`;
     selectorBuilding.name = `buildings`;
 
@@ -90,7 +90,16 @@ function createBuildingDiv(parentDom, slotNumber){
         }
     });
 
-    selectButton = document.createElement('button');
+    const robotsLabel = document.createElement('label');
+    robotsLabel.for = `robots${slotNumber}`;
+    robotsLabel.textContent = `Robot Automation?`;
+
+    const robotsInput = document.createElement('input');
+    robotsInput.type = 'checkbox';
+    robotsInput.id = `robots${slotNumber}`;
+    robotsInput.name = `robotsInputs`;
+
+    const selectButton = document.createElement('button');
     selectButton.className = 'button';
     selectButton.id = `building${slotNumber}submit`;
     selectButton.textContent = `Select Building`
@@ -99,6 +108,8 @@ function createBuildingDiv(parentDom, slotNumber){
     };
     buildingDiv.appendChild(selectorBuildingLabel);
     buildingDiv.appendChild(selectorBuilding);
+    buildingDiv.appendChild(robotsLabel);
+    buildingDiv.appendChild(robotsInput);
     buildingDiv.appendChild(selectButton);
     parentDom.appendChild(buildingDiv);
     parentDom.appendChild(document.createElement('hr'));
@@ -173,54 +184,57 @@ function populateProductSelector(buildingSelector, productSelector,slotNumber){
 }
 
 function submitBuildings(){
-    levelDoms = document.getElementsByName('level');
-    abundanceDoms = document.getElementsByName('abundance');
-    buildingDoms = document.getElementsByName('buildings');
-    productDoms = document.getElementsByName('product');
+    var levelDoms = document.getElementsByName('level');
+    var abundanceDoms = document.getElementsByName('abundance');
+    var buildingDoms = document.getElementsByName('buildings');
+    var productDoms = document.getElementsByName('product');
+    var robotSpecializations = document.getElementsByName('robotsInputs');
 
     if(buildingDoms.length != productDoms.length){return}
     map = [];
-    abundanceCount = 0;
+    var abundanceCount = 0;
     buildingDoms.forEach((buildingSlot, i) => {
 
-        buildingJSON = buildingsJson.find(
+        const buildingJSON = buildingsJson.find(
                         build => build.db_letter == buildingSlot.value);
-        productJSON = resourceJson.find(
+        const productJSON = resourceJson.find(
                         resource => resource.db_letter == productDoms[i].value);
         if(abundanceBuildings.find(abunBuild => abunBuild == buildingJSON.db_letter)){
             if(abundanceDoms.length>1){
 
-                abundance = abundanceDoms[abundanceCount].value;
+                var abundance = abundanceDoms[abundanceCount].value;
                 abundanceCount += 1;
             }
             else{
-                abundance = abundanceDoms.value;
+                var abundance = abundanceDoms.value;
                 abundanceDoms = null;
             }
 
         }else{
-            abundance = undefined;
+            var abundance = undefined;
         }
         if (levelDoms[i].value < 1) {
-            level = 1
+            var level = 1
         }
         else{
-            level = Number(levelDoms[i].value);
+            var level = Number(levelDoms[i].value);
         }
-        var build = createBuildSlotObject(buildingJSON,abundance,productJSON,level);
+        var robotBoolean = robotSpecializations[i].checked;
+        var build = createBuildSlotObject(buildingJSON,abundance,productJSON,level,robotBoolean);
         map.push(build);
     });
     createCenterPanel();
 }
 
-function createBuildSlotObject(buildJSON,abundance,product,level){
-
+function createBuildSlotObject(buildJSON,abundance,product,level,robotBoolean){
+    console.log(buildJSON);
     var building = {};
     building.level = level;
     building.producing = product;
     building.name = buildJSON.name;
     building.costUnits = buildJSON.costUnits;
     building.buildTime = buildJSON.hours;
+    building.robot = robotBoolean;
     if(abundance){
         building.abundance = abundance;
         building.producedPerHour = product.producedPerHour *
@@ -231,6 +245,13 @@ function createBuildSlotObject(buildJSON,abundance,product,level){
         building.producedPerHour = product.producedPerHour *
                                         (1+(productionSpeed/100))*
                                         level;
+    }
+    //if Either not checked or undefined default to no robots
+    if(robotBoolean){
+        building.salaryHourly = buildJSON.wages*0.97*level;
+    }
+    else {
+        building.salaryHourly = buildJSON.wages*level;
     }
 
     return building;
@@ -255,9 +276,9 @@ function createCenterPanel(){
     panel.appendChild(adminInput);
 
     panel.appendChild(document.createElement('hr'));
-    uniqueProduced = reduceProducedList();
+    var uniqueProduced = reduceProducedList();
     uniqueProducedGlobal = JSON.parse(JSON.stringify(uniqueProduced));
-    uniqueIngredients = reducedIngredientList(uniqueProduced);
+    var uniqueIngredients = reducedIngredientList(uniqueProduced);
     uniqueIngredientsGlobal = JSON.parse(JSON.stringify(uniqueIngredients));
 
     // populateTotalProduced(panel,uniqueProduced);
@@ -437,7 +458,7 @@ function createTable(parentDom, tableData){
 }
 
 function getUnitLaborCost(productionData, adminPercent){
-    unitWorkerCost = (productionData.producing.baseSalary*productionData.level)/
+    unitWorkerCost = (productionData.salaryHourly)/
                                         productionData.producedPerHour;
     unitLaborCost = unitWorkerCost * (1+adminPercent/100);
 
@@ -681,7 +702,7 @@ function determineIngredientExpenses(){
 function determineTotalLaborCost(){
     var totalWorkerCost = 0;
     uniqueProducedGlobal.forEach((product, i) => {
-        var workerCost = product.producing.baseSalary * product.level;
+        var workerCost = product.salaryHourly;
         totalWorkerCost += workerCost;
     });
     var adminPercent = Number(document.getElementById('adminInput').value);
@@ -1056,11 +1077,11 @@ function calculateAdminValue(){
 }
 
 function reduceProducedList(){
-    reducedProduced = [];
-    recorded = false;
+    var reducedProduced = [];
+    var recorded = false;
     //looping through all produced items trying to find duplicates
     map.forEach((produced, i) => {
-        duplicateProduced = [];
+        var duplicateProduced = [];
         duplicateProduced = map.filter(entry =>
             entry.producing.db_letter == produced.producing.db_letter);
         //Checks for the entry in the unique list.
@@ -1070,16 +1091,19 @@ function reduceProducedList(){
         }
         //If duplicate found and not recorded
         if(duplicateProduced.length>1 && !recorded){
-            totalProduced = 0;
-            totalLevel = 0;
-            //adding up the total produced per hour
+            var totalProduced = 0;
+            var totalLevel = 0;
+            var totalSalary = 0;
+            //adding up the total produced per hour and total salary
             duplicateProduced.forEach((prod, i) => {
                 totalProduced += prod.producedPerHour;
                 totalLevel += prod.level;
+                totalSalary += prod.salaryHourly;
             });
-            producedToPushDuplicate = JSON.parse(JSON.stringify(produced));
+            var producedToPushDuplicate = JSON.parse(JSON.stringify(produced));
             producedToPushDuplicate.producedPerHour = totalProduced;
             producedToPushDuplicate.level = totalLevel;
+            producedToPushDuplicate.salaryHourly = totalSalary;
             reducedProduced.push(producedToPushDuplicate);
 
             recorded = true;
@@ -1089,6 +1113,7 @@ function reduceProducedList(){
         }
         recorded=false;
     });
+    console.log(reducedProduced);
     return reducedProduced
 }
 
